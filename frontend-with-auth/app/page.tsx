@@ -1,3 +1,10 @@
+import { Box } from "@chakra-ui/react";
+import ComingSoonPage from "./ComingSoon";
+
 export default function Home() {
-  return <p>Hello</p>;
+  return (
+    <Box>
+      <ComingSoonPage />
+    </Box>
+  );
 }
