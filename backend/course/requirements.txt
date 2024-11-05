@@ -1,0 +1,7 @@
+fastapi[all]
+pandas
+numpy
+uvicorn
+sqlalchemy
+SQLAlchemy
+psycopg2-binary
