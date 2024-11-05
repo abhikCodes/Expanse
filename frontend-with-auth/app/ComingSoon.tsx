@@ -1,10 +1,14 @@
 "use client";
-import { Box, Text, Button, VStack, Center, Icon } from "@chakra-ui/react";
-import { BellIcon } from "@chakra-ui/icons";
+import { Box, Text, Button, VStack, Center } from "@chakra-ui/react";
 
 const ComingSoonPage = () => {
   return (
-    <Center h="100vh" bgGradient="linear(to-r, teal.400, blue.500)">
+    <Center
+      h="100vh"
+      bgGradient="to-r"
+      gradientFrom="teal.400"
+      gradientTo="blue.500"
+    >
       <Box
         textAlign="center"
         p={{ base: 4, md: 8 }}
@@ -27,13 +31,12 @@ const ComingSoonPage = () => {
           </Text>
           <Button
             colorScheme="teal"
+            border="sm"
+            padding="2"
             size="lg"
             onClick={() => alert("Stay tuned!")}
             _hover={{ bg: "teal.600", transform: "scale(1.05)" }}
           >
-            <Icon>
-              <BellIcon />
-            </Icon>
             Notify Me
           </Button>
         </VStack>
