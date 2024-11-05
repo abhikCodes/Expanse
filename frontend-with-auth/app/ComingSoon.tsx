@@ -23,7 +23,7 @@ const ComingSoonPage = () => {
           </Text>
           <Text fontSize={{ base: "md", md: "lg" }} color="gray.700">
             Your Distributed Learning Platform <strong>Expanse</strong> will be
-            up soon.
+            up soon...
           </Text>
           <Button
             colorScheme="teal"
