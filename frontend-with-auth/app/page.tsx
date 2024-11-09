@@ -1,10 +1,10 @@
 import { Box } from "@chakra-ui/react";
-import ComingSoonPage from "./ComingSoon";
+import LandingPage from "./LandingPage";
 
 export default function Home() {
   return (
-    <Box>
-      <ComingSoonPage />
+    <Box className="mt-10">
+      <LandingPage />
     </Box>
   );
 }

@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Provider } from "@/components/ui/provider";
+import NavBar from "./NavBar";
+import { Providers } from "./components/provider";
+import AuthProvider from "./auth/Provider";
+import { Container } from "@chakra-ui/react";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -13,9 +16,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <Provider>{children}</Provider>
+        <AuthProvider>
+          <Providers>
+            <nav>
+              <NavBar />
+            </nav>
+            <Container>
+              <main className="mt-20">{children}</main>
+            </Container>
+          </Providers>
+        </AuthProvider>
       </body>
     </html>
   );
