@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-import models
+import models, os, sys
 from database import engine, SessionLocal
 from schema import CourseBase, CourseCreate
 from sqlalchemy.orm import Session
@@ -38,9 +38,17 @@ async def get_course(course_id: int, db: db_dependency):
             )
         )
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message="Error in retrieving course", details=str(e))
+            content=error_response(message=f"Error in retrieving course", details=detail_dict)
         )
 
 
@@ -62,6 +70,9 @@ async def create_course(course: CourseCreate, db: db_dependency):
             db.refresh(db_course)
         except Exception as e:
             db.rollback()
+            detail_dict = {
+                "exception": e
+            }
             return JSONResponse(
                 status_code=500,
                 content=error_response(message="Error creating course", details=str(e))
@@ -75,9 +86,17 @@ async def create_course(course: CourseCreate, db: db_dependency):
         )
     
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message="Error creating course", details=str(e))
+            content=error_response(message="Error creating course", details=detail_dict)
         )
 
 
@@ -105,9 +124,12 @@ async def update_course(course_id: int, course: CourseBase, db: db_dependency):
             db.refresh(db_course)
         except Exception as e:
             db.rollback()
+            detail_dict = {
+                "exception": e
+            }
             return JSONResponse(
                 status_code=500,
-                content=error_response(message="Error updating course", details=str(e))
+                content=error_response(message="Error updating course", details=detail_dict)
             )
         
         return JSONResponse(
@@ -119,9 +141,17 @@ async def update_course(course_id: int, course: CourseBase, db: db_dependency):
         )
     
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message="Error updating course", details=str(e))
+            content=error_response(message="Error updating course", details=detail_dict)
         )
 
 
@@ -141,12 +171,14 @@ async def delete_course(course_id: int, db: db_dependency):
         try:
             db.delete(db_course)
             db.commit()
-            
         except Exception as e:
             db.rollback()
+            detail_dict = {
+                "exception": e
+            }
             return JSONResponse(
                 status_code=500,
-                content=error_response(message="Error deleting course", details=str(e))
+                content=error_response(message="Error deleting course", details=detail_dict)
             )
         
         return JSONResponse(
@@ -158,7 +190,15 @@ async def delete_course(course_id: int, db: db_dependency):
         )
     
     except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message="Error deleting course", details=str(e))
+            content=error_response(message="Error deleting course", details=detail_dict)
         )

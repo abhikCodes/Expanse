@@ -9,7 +9,7 @@ def success_response(data: dict, message: str = "Operation successful"):
         "timestamp": datetime.utcnow().isoformat()
     }
 
-def error_response(message: str, details: str = None):
+def error_response(message: str, details: dict = {}):
     return {
         "status": "error",
         "message": message,
