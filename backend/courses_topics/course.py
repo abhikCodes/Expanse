@@ -22,18 +22,23 @@ db_dependency = Annotated[Session, Depends(get_db)]
 
 """GET API: to get all the details for a specific course using it's ID"""
 @router.get("/course/{course_id}")
-async def get_course(course_id: int, db: db_dependency):
+async def get_course(course_id: int, db: db_dependency, mode: str = None):
     try:
-        result = db.query(models.Courses).filter(models.Courses.course_id == course_id).first()
+        if mode=='all':
+            result = db.query(models.Courses).all()
+        else:
+            result = [db.query(models.Courses).filter(models.Courses.course_id == course_id).first()]
+
         if not result:
             return JSONResponse(
                 status_code=404, 
                 content=error_response(message="Course Not Found")
             )
+        
         return JSONResponse(
             status_code=200,
             content=success_response(
-                data=CourseBase.model_validate(result).model_dump(), 
+                data=[CourseBase.model_validate(cor).model_dump() for cor in result], 
                 message="Course retrieved successfully"
             )
         )
