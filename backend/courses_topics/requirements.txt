@@ -5,3 +5,5 @@ uvicorn
 sqlalchemy
 SQLAlchemy
 psycopg2-binary
+boto3
+pymongo
