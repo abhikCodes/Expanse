@@ -166,7 +166,7 @@ const LandingPage = () => {
             name="Abhik Sarkar"
             title="Data Scientist"
             quote="Abhik specializes in machine learning and data analysis to provide insights that drive our platform"
-            image=""
+            image="/abhik.jpeg"
           />
           <TestimonialCard
             name="Samundar Paji"
