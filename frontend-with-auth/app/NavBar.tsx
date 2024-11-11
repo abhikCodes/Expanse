@@ -22,9 +22,7 @@ import { useSession } from "next-auth/react";
 const NavBar = () => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
-  // const currentPath = usePathname();
   const { status, data: sessionData } = useSession();
-  useSession();
   return (
     <Box
       className="py-2 border-b-2 drop-shadow-md"
@@ -38,7 +36,25 @@ const NavBar = () => {
       <Container>
         <Flex justify="space-between" align="center">
           <Link href="/">
-            <RiMacbookFill size="28" />
+            <Flex align="center" gap="2">
+              <RiMacbookFill
+                className="hover:scale-110 transition-transform"
+                size="28"
+              />
+              <Text
+                fontSize="xl"
+                fontWeight="medium"
+                textTransform="full-size-kana"
+                letterSpacing="wide"
+                color={isDarkMode ? "neutral.900" : "primary.900"}
+                transition="all 0.3s ease"
+                _hover={{
+                  transform: "scale(1.05)",
+                }}
+              >
+                Expanse
+              </Text>
+            </Flex>
           </Link>
           <Flex align="center" gap="3">
             {status === "unauthenticated" && (
@@ -64,7 +80,7 @@ const NavBar = () => {
                   </Box>
                   <MenuDivider />
                   <MenuItem>
-                    <Link href="/profile">Profile Details</Link>
+                    <Link href="/dashboard/profile">Profile Details</Link>
                   </MenuItem>
                   <Link href="/api/auth/signout">
                     <MenuItem>Log Out</MenuItem>
