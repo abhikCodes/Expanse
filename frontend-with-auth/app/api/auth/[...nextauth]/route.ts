@@ -12,7 +12,54 @@ const handler = NextAuth({
     }),
   ],
   session: {
-    strategy: "jwt",
+    strategy: "jwt", // Using JWT strategy
+  },
+  callbacks: {
+    async signIn({ user }) {
+      // Check if the user already exists in the database
+      const existingUser = await prisma.user.findUnique({
+        where: { email: user.email! },
+      });
+
+      if (existingUser) {
+        const isTeacher = user.email!.endsWith("@gmail.com"); // Example condition
+        await prisma.user.update({
+          where: { email: user.email! },
+          data: {
+            role: isTeacher ? "teacher" : "student",
+          },
+        });
+      }
+
+      return true;
+    },
+
+    async session({ session, token, user }) {
+      if (user?.role) {
+        session.user.role = user.role;
+      }
+      if (token?.accessToken) {
+        session.accessToken = token.accessToken as string; // Pass the access token to the session
+      }
+      if (token?.idToken) {
+        session.idToken = token.idToken as string;
+      }
+
+      return session;
+    },
+
+    async jwt({ token, user, account }) {
+      if (user?.role) {
+        token.role = user.role; // Add the user role to the token
+      }
+      if (account?.access_token) {
+        token.accessToken = account.access_token; // Add the access token to the token
+      }
+      if (account?.id_token) {
+        token.idToken = account.id_token;
+      }
+      return token; // Return the JWT token with the added data
+    },
   },
 });
 

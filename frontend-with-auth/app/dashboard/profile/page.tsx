@@ -16,7 +16,6 @@ const ProfilePage = () => {
   const { data: sessionData } = useSession();
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
-  console.log(sessionData, "sess");
   return (
     <Box
       mx="auto"
