@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
 from database import Base
 
@@ -14,6 +14,7 @@ class Posts(Base):
     # post_updated_by = Column(Integer, index=True)
     post_updated_timestamp = Column(DateTime, default=func.now(), index=True)
     vote_count = Column(Integer, index=True)
+    votes_by = Column(String, index=True)
     course_id = Column(Integer, nullable=False, index=True)
 
 class Comments(Base):
@@ -26,5 +27,6 @@ class Comments(Base):
     # comment_updated_by = Column(Integer, index=True)
     comment_updated_timestamp = Column(DateTime, default=func.now(), index=True)
     vote_count = Column(Integer, index=True)
-    comment_in_post = Column(Integer, nullable=False, index=True)
+    votes_by = Column(String, index=True)
+    comment_in_post = Column(Integer, ForeignKey("courses.course_id"))
     comment_level = Column(Integer, nullable=False, index=True)
