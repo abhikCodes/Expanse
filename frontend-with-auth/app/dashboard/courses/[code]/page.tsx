@@ -36,8 +36,6 @@ const CourseDetails = ({ params: { code } }: props) => {
     setLoadingError(false); // Reset error on successful load
   };
 
-  console.log(code);
-
   return (
     <Box _dark={{ bg: "neutral.50._dark" }} maxW="1200px" mx="auto">
       {/* Course Header */}
@@ -47,7 +45,7 @@ const CourseDetails = ({ params: { code } }: props) => {
           size="xl"
           color={isDarkMode ? "neutral.900" : "primary.900"}
         >
-          {courseDetails.course_name}
+          {courseDetails.course_name + " - " + code}
         </Heading>
         <Text
           fontSize="lg"
