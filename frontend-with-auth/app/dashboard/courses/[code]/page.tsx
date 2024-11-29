@@ -39,7 +39,7 @@ const CourseDetails = ({ params: { code } }: props) => {
   console.log(code);
 
   return (
-    <Box p={6} _dark={{ bg: "neutral.50._dark" }} maxW="1200px" mx="auto">
+    <Box _dark={{ bg: "neutral.50._dark" }} maxW="1200px" mx="auto">
       {/* Course Header */}
       <Box mb={8} textAlign="center">
         <Heading
