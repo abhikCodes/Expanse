@@ -9,7 +9,7 @@ const Courses = () => {
   const router = useRouter();
 
   const handleClick = (course_code: string) => {
-    router.push(`/dashboard/course/${course_code}`);
+    router.push(`/dashboard/courses/${course_code}`);
   };
   return (
     <Box p={6} _dark={{ bg: "neutral.50._dark" }}>

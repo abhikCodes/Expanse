@@ -22,7 +22,7 @@ const handler = NextAuth({
       });
 
       if (existingUser) {
-        const isTeacher = user.email!.endsWith("@gmail.com"); // Example condition
+        const isTeacher = user.email!.endsWith("@gmail.com");
         await prisma.user.update({
           where: { email: user.email! },
           data: {
