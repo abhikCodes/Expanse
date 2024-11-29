@@ -12,17 +12,30 @@ import {
   AccordionIcon,
   Button,
   useColorMode,
+  Spinner,
 } from "@chakra-ui/react";
 import { courseDetails } from "@/app/constants";
+import { Document, Page, pdfjs } from "react-pdf";
 
 interface props {
   params: { code: string };
 }
 
+// Worker for react-pdf
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
+
 const CourseDetails = ({ params: { code } }: props) => {
   const [selectedPdf, setSelectedPdf] = useState<string | null>(null);
+  const [numPages, setNumPages] = useState<number | null>(null);
+  const [loadingError, setLoadingError] = useState<boolean>(false);
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setLoadingError(false); // Reset error on successful load
+  };
+
   console.log(code);
 
   return (
@@ -32,14 +45,14 @@ const CourseDetails = ({ params: { code } }: props) => {
         <Heading
           as="h1"
           size="xl"
-          color={isDarkMode ? "naturqal.900" : "primary.900"}
+          color={isDarkMode ? "neutral.900" : "primary.900"}
         >
           {courseDetails.course_name}
         </Heading>
         <Text
           fontSize="lg"
           mt={4}
-          color={isDarkMode ? "naturqal.700" : "neutral.700"}
+          color={isDarkMode ? "neutral.700" : "neutral.700"}
         >
           {courseDetails.course_description}
         </Text>
@@ -52,7 +65,7 @@ const CourseDetails = ({ params: { code } }: props) => {
             as="h2"
             size="md"
             mb={4}
-            color={isDarkMode ? "naturqal.900" : "primary.900"}
+            color={isDarkMode ? "neutral.900" : "primary.900"}
           >
             Topics Covered
           </Heading>
@@ -69,8 +82,11 @@ const CourseDetails = ({ params: { code } }: props) => {
                   <Text mb={4}>{topic.description}</Text>
                   {topic.pdfData && (
                     <Button
-                      colorScheme="blue"
-                      onClick={() => setSelectedPdf(topic.pdfData)}
+                      color={isDarkMode ? "neutral.900" : "primary.900"}
+                      onClick={() => {
+                        setSelectedPdf(topic.pdfData);
+                        setLoadingError(false); // Reset error when selecting a new PDF
+                      }}
                     >
                       View PDF
                     </Button>
@@ -81,7 +97,6 @@ const CourseDetails = ({ params: { code } }: props) => {
           </Accordion>
         </Box>
 
-        {/* PDF Viewer */}
         {selectedPdf && (
           <Box
             flex="1"
@@ -89,17 +104,48 @@ const CourseDetails = ({ params: { code } }: props) => {
             borderRadius="lg"
             overflow="hidden"
             boxShadow="md"
-            height="500px"
+            p={4}
+            maxHeight="500px"
           >
-            <iframe
-              src={`/pdfs/${selectedPdf}`}
-              width="100%"
-              height="100%"
-              style={{
-                border: "none",
-              }}
-              title="PDF Viewer"
-            />
+            <Heading
+              as="h3"
+              size="sm"
+              mb={4}
+              color={isDarkMode ? "neutral.900" : "primary.900"}
+            >
+              PDF Viewer
+            </Heading>
+            <Document
+              file={`/pdfs/${selectedPdf}`}
+              onLoadSuccess={onDocumentLoadSuccess}
+              onLoadError={() => setLoadingError(true)}
+              loading={<Spinner />}
+            >
+              {loadingError ? (
+                <Text color="red.500" fontSize="md">
+                  Unable to load PDF.
+                </Text>
+              ) : (
+                Array.from(new Array(numPages), (el, index) => (
+                  <Page
+                    key={`page_${index + 1}`}
+                    pageNumber={index + 1}
+                    width={400}
+                  />
+                ))
+              )}
+            </Document>
+            {!loadingError && selectedPdf && (
+              <Button
+                color={isDarkMode ? "neutral.900" : "primary.900"}
+                mt={4}
+                as="a"
+                href={`/pdfs/${selectedPdf}`}
+                download
+              >
+                Download PDF
+              </Button>
+            )}
           </Box>
         )}
       </Flex>
