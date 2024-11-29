@@ -16,6 +16,7 @@ import {
 } from "@chakra-ui/react";
 import { courseDetails } from "@/app/constants";
 import { Document, Page, pdfjs } from "react-pdf";
+import { useSession } from "next-auth/react";
 
 interface props {
   params: { code: string };
@@ -29,6 +30,8 @@ const CourseDetails = ({ params: { code } }: props) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [loadingError, setLoadingError] = useState<boolean>(false);
   const { colorMode } = useColorMode();
+  const { data, status } = useSession();
+  console.log(data, status);
   const isDarkMode = colorMode === "dark";
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {

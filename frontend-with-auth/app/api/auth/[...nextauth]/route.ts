@@ -34,15 +34,21 @@ const handler = NextAuth({
       return true;
     },
 
-    async session({ session, token, user }) {
-      if (user?.role) {
-        session.user.role = user.role;
-      }
+    async session({ session, token }) {
+      // if (user?.role) {
+      //   session.user.role = user.role;
+      // }
       if (token?.accessToken) {
         session.accessToken = token.accessToken as string; // Pass the access token to the session
       }
       if (token?.idToken) {
         session.idToken = token.idToken as string;
+      }
+      if (token?.role) {
+        session.user = {
+          ...session.user,
+          role: token.role as string, // Add role to the session
+        };
       }
 
       return session;
