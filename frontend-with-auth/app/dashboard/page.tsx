@@ -1,13 +1,22 @@
+"use client";
 import React from "react";
+import { useSession } from "next-auth/react";
 import Courses from "./courses/page";
 import { Grid, GridItem } from "@chakra-ui/react";
 import ProfilePage from "./profile/page";
 
 const Dashboard = () => {
+  const { data: session, status } = useSession();
+
+  if (status === "loading") return <div>Loading...</div>;
+  if (!session) return <div>You need to log in to access the dashboard.</div>;
+
+  const role = session.user.role;
+
   return (
     <Grid templateColumns="repeat(8, 1fr)" gap={4}>
       <GridItem colSpan={{ base: 8, md: 6 }}>
-        <Courses />
+        <Courses role={role} />
       </GridItem>
       <GridItem
         colSpan={{ base: 0, md: 2 }}
