@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useSession } from "next-auth/react";
-import Courses from "@/app/dashboard/courses/page";
+import Courses from "@/app/dashboard/courses/Courses";
 import { Grid, GridItem } from "@chakra-ui/react";
 import ProfilePage from "./profile/page";
 
