@@ -21,7 +21,11 @@ import {
 import Course from "./course";
 import { useRouter } from "next/navigation";
 
-const Courses = ({ role }: { role: string }) => {
+interface props {
+  role: string;
+}
+
+const Courses = ({ role }: props) => {
   const router = useRouter();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
