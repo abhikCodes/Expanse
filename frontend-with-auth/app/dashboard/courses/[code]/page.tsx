@@ -11,25 +11,21 @@ import {
   AccordionPanel,
   AccordionIcon,
   Button,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  Input,
   useDisclosure,
   useColorMode,
   Spinner,
-  VStack,
-  Checkbox,
-  useColorModeValue,
+  Grid,
+  GridItem,
 } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { courseDetails as initialCourseDetails } from "@/app/constants";
 import { dummyTopics } from "@/app/constants";
+import QuizNavigation from "./QuizNavigation";
+import DiscussionNavigation from "./DiscussionNavigation";
+import EditCourseModal from "./EditCourseModal";
+import DeleteTopicConfirmationModal from "./DeleteTopicConfirmationModal";
+import AddTopicsModal from "./AddTopicsModal";
 
 // Worker for react-pdf
 pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.js`;
@@ -53,7 +49,6 @@ const CourseDetails = ({ params: { code } }: Props) => {
     description: string;
     pdfData: string;
   } | null>(null);
-  const bg = useColorModeValue("neutral.500", "neutral.50._dark");
 
   const [newCourseTitle, setNewCourseTitle] = useState(
     courseDetails.course_name
@@ -122,7 +117,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
   };
 
   return (
-    <Box maxW="1200px" mx="auto" py={8} px={4}>
+    <Box mx="auto" py={8} px={4}>
       {/* Course Header */}
       <Box mb={8} textAlign="center">
         <Heading
@@ -146,221 +141,158 @@ const CourseDetails = ({ params: { code } }: Props) => {
         )}
       </Box>
 
-      {/* Topics Section */}
-      <Flex gap={8} flexDirection={{ base: "column", md: "row" }}>
-        <Box flex="1">
-          <Heading
-            as="h2"
-            size="md"
-            mb={4}
-            color={isDarkMode ? "neutral.900" : "primary.900"}
-          >
-            Topics Covered
-          </Heading>
-          <Accordion allowMultiple>
-            {courseDetails.topics.map((topic) => (
-              <AccordionItem key={topic.id}>
-                <AccordionButton>
-                  <Box flex="1" textAlign="left">
-                    {topic.title}
-                  </Box>
-                  <AccordionIcon />
-                </AccordionButton>
-                <AccordionPanel pb={4}>
-                  <Text mb={4}>{topic.description}</Text>
-                  <Flex justify="space-between">
-                    {topic.pdfData && (
-                      <Button
-                        color={isDarkMode ? "neutral.900" : "primary.900"}
-                        onClick={() => {
-                          setSelectedPdf(topic.pdfData);
-                          setLoadingError(false);
-                        }}
-                        mb={4}
-                      >
-                        View PDF
-                      </Button>
-                    )}
-                    {role === "teacher" && (
-                      <Button
-                        colorScheme="red"
-                        size="sm"
-                        onClick={() => {
-                          setTopicToDelete(topic.id);
-                          onDeleteModalOpen();
-                        }}
-                      >
-                        Delete Topic
-                      </Button>
-                    )}
-                  </Flex>
-                </AccordionPanel>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          {role === "teacher" && (
-            <Button colorScheme="teal" mt={4} onClick={onAddTopicModalOpen}>
-              Add New Topic
-            </Button>
-          )}
-        </Box>
-
-        {selectedPdf && (
+      <Grid templateColumns="repeat(12, 1fr)" gap={8}>
+        {/* Topics Section */}
+        <GridItem colSpan={{ base: 8, md: 9 }}>
           <Box
-            flex="1"
             borderWidth="1px"
             borderRadius="lg"
-            overflow="hidden"
-            boxShadow="md"
-            p={4}
-            maxHeight="500px"
+            boxShadow="lg"
+            p={6}
+            bg={isDarkMode ? "gray.800" : "white"}
           >
-            <Heading
-              as="h3"
-              size="sm"
-              mb={4}
-              color={isDarkMode ? "neutral.900" : "primary.900"}
-            >
-              PDF Viewer
-            </Heading>
-            <Document
-              file={`/pdfs/${selectedPdf}`}
-              onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={() => setLoadingError(true)}
-              loading={<Spinner />}
-            >
-              {loadingError ? (
-                <Text color="red.500" fontSize="md">
-                  Unable to load PDF.
-                </Text>
-              ) : (
-                Array.from(new Array(numPages), (el, index) => (
-                  <Page
-                    key={`page_${index + 1}`}
-                    pageNumber={index + 1}
-                    width={400}
-                  />
-                ))
-              )}
-            </Document>
+            <Flex gap={8} flexDirection={{ base: "column", md: "row" }}>
+              <Box flex="1">
+                <Heading
+                  as="h2"
+                  size="md"
+                  mb={4}
+                  color={isDarkMode ? "neutral.900" : "primary.900"}
+                >
+                  Topics Covered
+                </Heading>
+                <Accordion allowMultiple>
+                  {courseDetails.topics.map((topic) => (
+                    <AccordionItem key={topic.id}>
+                      <AccordionButton>
+                        <Box flex="1" textAlign="left">
+                          {topic.title}
+                        </Box>
+                        <AccordionIcon />
+                      </AccordionButton>
+                      <AccordionPanel pb={4}>
+                        <Text mb={4}>{topic.description}</Text>
+                        <Flex justify="space-between">
+                          {topic.pdfData && (
+                            <Button
+                              color={isDarkMode ? "neutral.900" : "primary.900"}
+                              onClick={() => {
+                                setSelectedPdf(topic.pdfData);
+                                setLoadingError(false);
+                              }}
+                              mb={4}
+                            >
+                              View PDF
+                            </Button>
+                          )}
+                          {role === "teacher" && (
+                            <Button
+                              colorScheme="red"
+                              // size="md"
+                              onClick={() => {
+                                setTopicToDelete(topic.id);
+                                onDeleteModalOpen();
+                              }}
+                            >
+                              Delete Topic
+                            </Button>
+                          )}
+                        </Flex>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+                {role === "teacher" && (
+                  <Button
+                    colorScheme="teal"
+                    mt={4}
+                    onClick={onAddTopicModalOpen}
+                  >
+                    Add New Topic
+                  </Button>
+                )}
+              </Box>
+            </Flex>
           </Box>
-        )}
-      </Flex>
+          {/* PDF Viewer */}
+          {selectedPdf && (
+            <Box
+              flex="1"
+              borderWidth="1px"
+              borderRadius="lg"
+              overflow="hidden"
+              boxShadow="md"
+              p={4}
+              maxHeight="500px"
+              mt={8}
+            >
+              <Heading
+                as="h3"
+                size="sm"
+                mb={4}
+                color={isDarkMode ? "neutral.900" : "primary.900"}
+              >
+                PDF Viewer
+              </Heading>
+              <Document
+                file={`/pdfs/${selectedPdf}`}
+                onLoadSuccess={onDocumentLoadSuccess}
+                onLoadError={() => setLoadingError(true)}
+                loading={<Spinner />}
+              >
+                {loadingError ? (
+                  <Text color="red.500" fontSize="md">
+                    Unable to load PDF.
+                  </Text>
+                ) : (
+                  Array.from(new Array(numPages), (el, index) => (
+                    <Page
+                      key={`page_${index + 1}`}
+                      pageNumber={index + 1}
+                      width={400}
+                    />
+                  ))
+                )}
+              </Document>
+            </Box>
+          )}
+        </GridItem>
+
+        {/* Quizzes & Discussion Section */}
+        <GridItem colSpan={{ base: 8, md: 3 }}>
+          <DiscussionNavigation code={code} />
+          <QuizNavigation code={code} />
+        </GridItem>
+      </Grid>
 
       {/* Add Topics Modal */}
-      <Modal
-        size="2xl"
-        isOpen={isAddTopicModalOpen}
-        onClose={onAddTopicModalClose}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Select Topics to Add</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Input
-              placeholder="Search topics"
-              mb={4}
-              onChange={(e) => {
-                // Add search logic here if needed
-                console.log(e);
-              }}
-            />
-            <VStack align="start">
-              {dummyTopics.map((topic) => (
-                <Checkbox
-                  key={topic.id}
-                  isChecked={selectedTopics.includes(topic.id)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedTopics([...selectedTopics, topic.id]);
-                      setSelectedTopicDetails(topic); // Set selected topic details
-                    } else {
-                      setSelectedTopics(
-                        selectedTopics.filter((id) => id !== topic.id)
-                      );
-                      if (selectedTopicDetails?.id === topic.id) {
-                        setSelectedTopicDetails(null); // Reset when unselected
-                      }
-                    }
-                  }}
-                >
-                  {topic.title}
-                </Checkbox>
-              ))}
-            </VStack>
-
-            {/* Display selected topic details */}
-            {selectedTopicDetails && (
-              <Box mt={4} p={4} borderWidth="1px" borderRadius="md" bg={bg}>
-                <Heading as="h4" size="sm" mb={2}>
-                  Selected Topic: {selectedTopicDetails.title}
-                </Heading>
-                <Text fontSize="sm">{selectedTopicDetails.description}</Text>
-              </Box>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="teal" onClick={handleAddTopics}>
-              Add Selected Topics
-            </Button>
-            <Button variant="ghost" onClick={onAddTopicModalClose} ml={2}>
-              Cancel
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <AddTopicsModal
+        isAddTopicModalOpen={isAddTopicModalOpen}
+        onAddTopicModalClose={onAddTopicModalClose}
+        handleAddTopics={handleAddTopics}
+        selectedTopics={selectedTopics}
+        selectedTopicDetails={selectedTopicDetails}
+        setSelectedTopics={setSelectedTopics}
+        setSelectedTopicDetails={setSelectedTopicDetails}
+      />
 
       {/* Edit Course Modal */}
-      <Modal isOpen={isEditCourseModalOpen} onClose={onEditCourseModalClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit Course</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Input
-              value={newCourseTitle}
-              onChange={(e) => setNewCourseTitle(e.target.value)}
-              placeholder="Course Title"
-              mb={4}
-            />
-            <Input
-              value={newCourseDescription}
-              onChange={(e) => setNewCourseDescription(e.target.value)}
-              placeholder="Course Description"
-              mb={4}
-            />
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="teal" onClick={handleEditCourse}>
-              Save Changes
-            </Button>
-            <Button variant="ghost" onClick={onEditCourseModalClose} ml={2}>
-              Cancel
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <EditCourseModal
+        isEditCourseModalOpen={isEditCourseModalOpen}
+        onEditCourseModalClose={onEditCourseModalClose}
+        newCourseTitle={newCourseTitle}
+        newCourseDescription={newCourseDescription}
+        setNewCourseDescription={setNewCourseDescription}
+        setNewCourseTitle={setNewCourseTitle}
+        handleEditCourse={handleEditCourse}
+      />
 
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Confirm Delete</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Text>Are you sure you want to delete this topic?</Text>
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="red" onClick={confirmDeleteTopic} mr={3}>
-              Delete
-            </Button>
-            <Button variant="ghost" onClick={onDeleteModalClose}>
-              Cancel
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* Confirm Delete Topic Modal */}
+      <DeleteTopicConfirmationModal
+        isDeleteModalOpen={isDeleteModalOpen}
+        onDeleteModalClose={onDeleteModalClose}
+        confirmDeleteTopic={confirmDeleteTopic}
+      />
     </Box>
   );
 };

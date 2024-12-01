@@ -218,3 +218,41 @@ export const dummyTopics = [
     pdfData: "future-trends-ml.pdf",
   },
 ];
+
+export const sampleQuizzes = [
+  {
+    id: "1",
+    title: "DS Basics",
+    description:
+      "What are the fundamental characteristics of a distributed system?",
+  },
+  {
+    id: "2",
+    title: "History of DS",
+    description: "How do distributed systems achieve reliable communication?",
+  },
+  {
+    id: "3",
+    title: "CAP Theorum",
+    description:
+      "What are the key differences between Paxos and Raft algorithms?",
+  },
+  {
+    id: "4",
+    title: "Fault Tolerance",
+    description:
+      "Can a system achieve consistency, availability, and partition tolerance simultaneously?",
+  },
+  {
+    id: "5",
+    title: "Remote Method Invocation",
+    description:
+      "What strategies can improve fault tolerance in a distributed environment?",
+  },
+  {
+    id: "6",
+    title: "Message Oriented Middleware",
+    description:
+      "How does an event-driven architecture handle real-time events?",
+  },
+];
