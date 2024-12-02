@@ -85,84 +85,84 @@
 #         )
 
 
-# """GET API: to get all the details for a specific topic using it's ID"""
-# @router.get("/topic/{topic_id}")
-# async def get_topic(topic_id: int, db: db_dependency):
-#     try:
-#         print("Get")
-#     except Exception as e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         detail_dict = {
-#             "exception": e,
-#             "exception_type": exc_type,
-#             "file_name": fname,
-#             "line_number": exc_tb.tb_lineno
-#         }
-#         return JSONResponse(
-#             status_code=500, 
-#             content=error_response(message=f"Error in retrieving course", details=detail_dict)
-#         )
+# # """GET API: to get all the details for a specific topic using it's ID"""
+# # @router.get("/topic/{topic_id}")
+# # async def get_topic(topic_id: int, db: db_dependency):
+# #     try:
+# #         print("Get")
+# #     except Exception as e:
+# #         exc_type, exc_obj, exc_tb = sys.exc_info()
+# #         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+# #         detail_dict = {
+# #             "exception": e,
+# #             "exception_type": exc_type,
+# #             "file_name": fname,
+# #             "line_number": exc_tb.tb_lineno
+# #         }
+# #         return JSONResponse(
+# #             status_code=500, 
+# #             content=error_response(message=f"Error in retrieving course", details=detail_dict)
+# #         )
 
 
 
-# """POST API: to create a new topic..."""
-# @router.post("/topic/")
-# async def create_course(course: CourseCreate, db: db_dependency):
-#     try:
-#         print("Post")
-#     except Exception as e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         detail_dict = {
-#             "exception": e,
-#             "exception_type": exc_type,
-#             "file_name": fname,
-#             "line_number": exc_tb.tb_lineno
-#         }
-#         return JSONResponse(
-#             status_code=500, 
-#             content=error_response(message="Error creating course", details=detail_dict)
-#         )
+# # """POST API: to create a new topic..."""
+# # @router.post("/topic/")
+# # async def create_course(course: CourseCreate, db: db_dependency):
+# #     try:
+# #         print("Post")
+# #     except Exception as e:
+# #         exc_type, exc_obj, exc_tb = sys.exc_info()
+# #         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+# #         detail_dict = {
+# #             "exception": e,
+# #             "exception_type": exc_type,
+# #             "file_name": fname,
+# #             "line_number": exc_tb.tb_lineno
+# #         }
+# #         return JSONResponse(
+# #             status_code=500, 
+# #             content=error_response(message="Error creating course", details=detail_dict)
+# #         )
 
 
 
-# """PUT API: to update any detail for the courses."""
-# @router.put("/course/{course_id}")
-# async def update_course(course_id: int, course: CourseBase, db: db_dependency):
-#     try:
-#         print("Put")
-#     except Exception as e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         detail_dict = {
-#             "exception": e,
-#             "exception_type": exc_type,
-#             "file_name": fname,
-#             "line_number": exc_tb.tb_lineno
-#         }
-#         return JSONResponse(
-#             status_code=500, 
-#             content=error_response(message="Error updating course", details=detail_dict)
-#         )
+# # """PUT API: to update any detail for the courses."""
+# # @router.put("/course/{course_id}")
+# # async def update_course(course_id: int, course: CourseBase, db: db_dependency):
+# #     try:
+# #         print("Put")
+# #     except Exception as e:
+# #         exc_type, exc_obj, exc_tb = sys.exc_info()
+# #         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+# #         detail_dict = {
+# #             "exception": e,
+# #             "exception_type": exc_type,
+# #             "file_name": fname,
+# #             "line_number": exc_tb.tb_lineno
+# #         }
+# #         return JSONResponse(
+# #             status_code=500, 
+# #             content=error_response(message="Error updating course", details=detail_dict)
+# #         )
 
 
 
-# """DELETE API: to delete any course."""
-# @router.delete("/course/{course_id}")
-# async def delete_course(course_id: int, db: db_dependency):
-#     try:
-#         print("Delete")
-#     except Exception as e:
-#         exc_type, exc_obj, exc_tb = sys.exc_info()
-#         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-#         detail_dict = {
-#             "exception": e,
-#             "exception_type": exc_type,
-#             "file_name": fname,
-#             "line_number": exc_tb.tb_lineno
-#         }
-#         return JSONResponse(
-#             status_code=500, 
-#             content=error_response(message="Error deleting course", details=detail_dict)
-#         )
+# # """DELETE API: to delete any course."""
+# # @router.delete("/course/{course_id}")
+# # async def delete_course(course_id: int, db: db_dependency):
+# #     try:
+# #         print("Delete")
+# #     except Exception as e:
+# #         exc_type, exc_obj, exc_tb = sys.exc_info()
+# #         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+# #         detail_dict = {
+# #             "exception": e,
+# #             "exception_type": exc_type,
+# #             "file_name": fname,
+# #             "line_number": exc_tb.tb_lineno
+# #         }
+# #         return JSONResponse(
+# #             status_code=500, 
+# #             content=error_response(message="Error deleting course", details=detail_dict)
+# #         )
