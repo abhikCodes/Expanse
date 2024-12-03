@@ -279,3 +279,37 @@ async def enroll_user(enroll: UserEnroll, db: db_dependency):
             status_code=500, 
             content=error_response(message="Error enrolling user", details=detail_dict)
         )
+    
+
+"""GET API: Get all the enrolled courses for a student"""
+@router.get("/enrolledCourses")
+async def get_enrolled_courses(user_id: int, db: db_dependency):
+    try:
+        output = []
+        result = db.query(models.UserXrefCourse).filter(models.UserXrefCourse.user_id == user_id).all()
+        for cor in result:
+            course_id = UserEnroll.model_validate(cor).model_dump()['course_id']
+            course_details = db.query(models.Courses).filter(models.Courses.course_id == course_id).first()
+            output.append(CourseResponse.model_validate(course_details).model_dump())
+            
+        return JSONResponse(
+            status_code=200, 
+            content=success_response(
+                data=jsonable_encoder(output), 
+                message="User enrolled successfully"
+            )
+        )
+    
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
+        return JSONResponse(
+            status_code=500, 
+            content=error_response(message="Error enrolling user", details=detail_dict)
+        )
