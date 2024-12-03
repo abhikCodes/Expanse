@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse, Response
 import models, os, sys
 from database import engine, SessionLocal
-from schema import CourseBase, CourseCreate, CourseResponse
+from schema import CourseBase, CourseCreate, CourseResponse, UserEnroll
 from sqlalchemy.orm import Session
 from pymongo import MongoClient
 from gridfs import GridFS
@@ -231,4 +231,51 @@ async def delete_course(course_id: int, db: db_dependency):
         return JSONResponse(
             status_code=500, 
             content=error_response(message="Error deleting course", details=detail_dict)
+        )
+
+
+
+"""POST API: Enroll a user in a course."""
+@router.post("/enrollUser")
+async def enroll_user(enroll: UserEnroll, db: db_dependency):
+    try:
+        db_user_enroll = models.UserXrefCourse(
+            course_id=enroll.course_id, 
+            user_id=enroll.user_id
+        )
+        try:
+            db.add(db_user_enroll)
+            db.commit()
+            db.refresh(db_user_enroll)
+        except Exception as e:
+            db.rollback()
+            detail_dict = {
+                "exception": e
+            }
+            return JSONResponse(
+                status_code=500,
+                content=error_response(message="Error enrolling user", details=str(e))
+            )
+        return JSONResponse(
+            status_code=201, 
+            content=success_response(
+                data=jsonable_encoder({
+                    **UserEnroll.model_validate(db_user_enroll).model_dump()
+                }), 
+                message="User enrolled successfully"
+            )
+        )
+    
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
+        return JSONResponse(
+            status_code=500, 
+            content=error_response(message="Error enrolling user", details=detail_dict)
         )
