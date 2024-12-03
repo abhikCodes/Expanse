@@ -339,7 +339,7 @@ async def vote_post_in_forum(course_id: int, post_id: int, post: PostBase, db: d
 
 """PUT API: to vote a post inside the post page"""
 @router.put("/course/{course_id}/forum/{post_id}")
-async def vote_post_in_post(course_id: int, post_id: int, post: PostBase, db: db_dependency):
+async def vote_post_in_post(course_id: int, post_id: int, user_id: int, vote_count: int, new_vote: int, post: PostBase, db: db_dependency):
     try:
         db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
         if not db_course:
@@ -358,6 +358,36 @@ async def vote_post_in_post(course_id: int, post_id: int, post: PostBase, db: db
                     message = "Post Not Found"
                 )
             )
+
+        # Clicking upvote button will put new_vote as +1
+        if new_vote > 0:
+            if str(user_id) in db_forum.upvotes_by:
+                db_comment = forum_models.Comments(
+                    vote_count = vote_count - 1,
+                    upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
+                )
+
+            elif str(user_id) in db_forum.downvotes_by:
+                db_comment = forum_models.Comments(
+                    vote_count = vote_count + 2,
+                    downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' '),
+                    upvotes_by = db_forum.upvotes_by + ' ' + str(user_id)
+                )
+
+        # Clicking downvote button will put new_vote as -1
+        elif new_vote < 0:
+            if str(user_id) in db_forum.upvotes_by:
+                db_comment = forum_models.Comments(
+                    vote_count = vote_count - 2,
+                    upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' '),
+                    downvotes_by = db_forum.downvotes_by + ' ' + str(user_id)
+                )
+
+            elif str(user_id) in db_forum.downvotes_by:
+                db_comment = forum_models.Comments(
+                    vote_count = vote_count + 1,
+                    downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' ')
+                )
 
         update_data = post.model_dump(exclude_unset=True)
         for key, value in update_data.items():

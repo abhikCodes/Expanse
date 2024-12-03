@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 import models
 from database import engine
-from posts import router as forum_router
+from forum import router as forum_router
 
 app = FastAPI()
 
