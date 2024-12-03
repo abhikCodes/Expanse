@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, File, UploadFile, Form
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, StreamingResponse
 import models, os, sys
 from database import engine, SessionLocal
 from schema import ContentBase
@@ -94,43 +94,33 @@ async def create_topic(
             status_code=500, 
             content=error_response(message="Error uploading content", details=detail_dict)
         )
-    
+
 
 """GET API to retrieve content details."""
 @router.get("/content")
-async def get_content(content_id: str, db: db_dependency):
+async def get_content(content_id: str):
     try:
-        db_content = db.query(models.Contents).filter(models.Contents.content_id == content_id).first()
-        
-        if not db_content:
+        gridfs_file = fs.get(ObjectId(content_id))
+        if not gridfs_file:
             return JSONResponse(
                 status_code=404, 
                 content=error_response(message="Content Not Found")
             )
 
-        gridfs_file = fs.find_one({"_id": ObjectId(content_id)})
-        if not gridfs_file:
-            return JSONResponse(
-                status_code=404, 
-                content=error_response(message="Content file not found in GridFS")
-            )
-        
-        content_data = {
-            "content_id": db_content.id,
-            "course_id": db_content.course_id,
-            "topic_id": db_content.topic_id,
-            "filename": gridfs_file.filename,
-            "content_type": gridfs_file.content_type,
-            "metadata": gridfs_file.metadata,
-            **ContentBase.model_validate(db_content).model_dump()
-        }
+        # Stream the file back to the client
+        def iter_file():
+            while chunk := gridfs_file.read(1024 * 1024):  # Read in chunks
+                yield chunk
 
-        return JSONResponse(
-            status_code=200,
-            content=success_response(
-                data=jsonable_encoder(content_data),
-                message="Content retrieved successfully"
-            )
+        filename = gridfs_file.filename
+        sanitized_filename = filename.replace("\u202f", " ").replace(" ", "_")
+
+        return StreamingResponse(
+            iter_file(),
+            media_type=gridfs_file.content_type,
+            headers={
+                "Content-Disposition": f"attachment; filename={sanitized_filename}"
+            }
         )
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
