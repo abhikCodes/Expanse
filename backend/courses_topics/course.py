@@ -1,10 +1,14 @@
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 import models, os, sys
 from database import engine, SessionLocal
-from schema import CourseBase, CourseCreate
+from schema import CourseBase, CourseCreate, CourseResponse
 from sqlalchemy.orm import Session
+from pymongo import MongoClient
+from gridfs import GridFS
+from bson import ObjectId
+from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from backend.common.response_format import success_response, error_response
 
@@ -19,9 +23,15 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+MONGO_URI = "mongodb://localhost:27017"  
+MONGO_DB_NAME = "file_storage"
+client = MongoClient(MONGO_URI)
+db_mongo = client[MONGO_DB_NAME]
+fs = GridFS(db_mongo)
+
 
 """GET API: to get all the details for a specific course using it's ID"""
-@router.get("/course/{course_id}")
+@router.get("/course")
 async def get_course(course_id: int, db: db_dependency, mode: str = None):
     try:
         if mode=='all':
@@ -38,7 +48,7 @@ async def get_course(course_id: int, db: db_dependency, mode: str = None):
         return JSONResponse(
             status_code=200,
             content=success_response(
-                data=[CourseBase.model_validate(cor).model_dump() for cor in result], 
+                data=jsonable_encoder([CourseResponse.model_validate(cor).model_dump() for cor in result]), 
                 message="Course retrieved successfully"
             )
         )
@@ -59,7 +69,7 @@ async def get_course(course_id: int, db: db_dependency, mode: str = None):
 
 
 """POST API: to create a new course..."""
-@router.post("/course/")
+@router.post("/course")
 async def create_course(course: CourseCreate, db: db_dependency):
     try:
         db_course = models.Courses(
@@ -85,7 +95,10 @@ async def create_course(course: CourseCreate, db: db_dependency):
         return JSONResponse(
             status_code=201, 
             content=success_response(
-                data=CourseBase.model_validate(db_course).model_dump(), 
+                data=jsonable_encoder({
+                    "course_id": db_course.course_id,
+                    **CourseBase.model_validate(db_course).model_dump()
+                }), 
                 message="Course created successfully"
             )
         )
@@ -107,7 +120,7 @@ async def create_course(course: CourseCreate, db: db_dependency):
 
 
 """PUT API: to update any detail for the courses."""
-@router.put("/course/{course_id}")
+@router.put("/course")
 async def update_course(course_id: int, course: CourseBase, db: db_dependency):
     try:
         db_course = db.query(models.Courses).filter(models.Courses.course_id == course_id).first()
@@ -140,7 +153,7 @@ async def update_course(course_id: int, course: CourseBase, db: db_dependency):
         return JSONResponse(
             status_code=200,
             content=success_response(
-                data=CourseBase.model_validate(db_course).model_dump(), 
+                data=jsonable_encoder(CourseBase.model_validate(db_course).model_dump()), 
                 message="Course updated successfully"
             )
         )
@@ -162,7 +175,7 @@ async def update_course(course_id: int, course: CourseBase, db: db_dependency):
 
 
 """DELETE API: to delete any course."""
-@router.delete("/course/{course_id}")
+@router.delete("/course")
 async def delete_course(course_id: int, db: db_dependency):
     try:
         db_course = db.query(models.Courses).filter(models.Courses.course_id == course_id).first()
@@ -172,8 +185,20 @@ async def delete_course(course_id: int, db: db_dependency):
                 status_code=404, 
                 content=error_response(message="Course Not Found")
             )
+        
+        db_topics = db.query(models.Topics).filter(models.Topics.course_id == course_id).all()
 
         try:
+            db.query(models.UserXrefCourse).filter(models.UserXrefCourse.course_id == course_id).delete()
+
+            for topic in db_topics:
+                db_contents = db.query(models.Contents).filter(models.Contents.topic_id == topic.topic_id).all()
+                for content in db_contents:
+                    if fs.exists({"_id": ObjectId(content.content_id)}):
+                        fs.delete(ObjectId(content.content_id))
+                    db.delete(content)
+                db.delete(topic)
+
             db.delete(db_course)
             db.commit()
         except Exception as e:
@@ -186,12 +211,12 @@ async def delete_course(course_id: int, db: db_dependency):
                 content=error_response(message="Error deleting course", details=detail_dict)
             )
         
-        return JSONResponse(
+        return Response(
             status_code=204,
-            content=success_response(
-                data={},
-                message="Course deleted successfully"
-            )
+            # content=success_response(
+            #     data={},
+            #     message="Course deleted successfully"
+            # )
         )
     
     except Exception as e:
