@@ -34,7 +34,7 @@ fs = GridFS(db_mongo)
 
 """POST API to upload a content wrt to course and topic"""
 @router.post("/content")
-async def create_topic(
+async def create_content(
     db: db_dependency, 
     course_id: int = Form(...), 
     topic_id: int = Form(...),

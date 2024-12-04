@@ -32,12 +32,17 @@ fs = GridFS(db_mongo)
 
 """GET API: to get all the details for a specific course using it's ID"""
 @router.get("/course")
-async def get_course(course_id: int, db: db_dependency, mode: str = None):
+async def get_course(db: db_dependency, course_id: int = None, mode: str = None):
     try:
-        if mode=='all':
+        if mode=='all' and not course_id:
             result = db.query(models.Courses).all()
-        else:
+        elif mode != 'all' and course_id:
             result = [db.query(models.Courses).filter(models.Courses.course_id == course_id).first()]
+        else:
+            return JSONResponse(
+                status_code=404, 
+                content=error_response(message="Invalid Query Parameters")
+            )
 
         if not result:
             return JSONResponse(
@@ -311,5 +316,5 @@ async def get_enrolled_courses(user_id: int, db: db_dependency):
         }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message="Error enrolling user", details=detail_dict)
+            content=error_response(message="Error getting courses", details=detail_dict)
         )
