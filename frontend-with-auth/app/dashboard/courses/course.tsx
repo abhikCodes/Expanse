@@ -28,7 +28,7 @@ const Course = ({
   onDelete,
   onClick,
 }: Props) => {
-  const bg = useColorModeValue("neutral.900", "primary.900");
+  const bg = useColorModeValue("neutral.500", "primary.900");
   const color = useColorModeValue("primary.900", "neutral.50");
 
   return (
