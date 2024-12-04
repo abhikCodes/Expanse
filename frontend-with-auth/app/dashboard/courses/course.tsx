@@ -11,15 +11,17 @@ import {
 
 interface Props {
   course_code: string;
+  course_id: number;
   course_name: string;
   course_description: string;
   role: string;
   onEdit: (course_code: string) => void;
   onDelete: (course_code: string) => void;
-  onClick: (course_code: string) => void;
+  onClick: (course_code: number) => void;
 }
 
 const Course = ({
+  course_id,
   course_code,
   course_name,
   course_description,
@@ -43,7 +45,7 @@ const Course = ({
       width="300px"
       mb={6}
       p={4}
-      onClick={() => onClick(course_code)}
+      onClick={() => onClick(course_id)}
       transition="transform 0.3s, box-shadow 0.3s"
       _hover={{
         transform: "scale(1.05)",

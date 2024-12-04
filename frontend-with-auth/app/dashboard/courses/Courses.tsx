@@ -1,6 +1,6 @@
 "use client";
-import React, { useState } from "react";
-import { courseData } from "@/app/constants";
+import React, { useState, useEffect } from "react";
+// import { courseData } from "@/app/constants";
 import {
   Box,
   Flex,
@@ -20,9 +20,31 @@ import {
 } from "@chakra-ui/react";
 import Course from "./course";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { useSession } from "next-auth/react";
 
 interface props {
   role: string;
+}
+
+interface Course {
+  course_code: string;
+  course_name: string;
+  course_description: string;
+  course_created_by: number;
+  course_updated_by: number;
+  course_id: number;
+  course_created_timestamp: string;
+  course_updated_timestamp: string;
+}
+
+interface CourseResponse {
+  data: {
+    status: string;
+    message: string;
+    data: Course[];
+    timestamp: string;
+  };
 }
 
 const Courses = ({ role }: props) => {
@@ -34,16 +56,21 @@ const Courses = ({ role }: props) => {
     onClose: onDeleteModalClose,
   } = useDisclosure();
 
+  const { status, data: sessionData } = useSession();
+
   const [newCourse, setNewCourse] = useState({
     course_code: "",
     course_name: "",
     course_description: "",
   });
 
+  console.log(sessionData, "session");
+  console.log(status, "session");
   const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
+  const [courseData, setCourseData] = useState<Course[] | null>(null);
 
-  const handleClick = (course_code: string) => {
-    router.push(`/dashboard/courses/${course_code}`);
+  const handleClick = (course_id: number) => {
+    router.push(`/dashboard/courses/${course_id}`);
   };
 
   const handleEdit = (course_code: string) => {
@@ -72,8 +99,28 @@ const Courses = ({ role }: props) => {
     onClose();
   };
 
+  useEffect(() => {
+    getUser();
+  }, []);
+
   const bg = useColorModeValue("neutral.500", "neutral.50._dark");
 
+  async function getUser() {
+    try {
+      const response = await axios.get<CourseResponse>(
+        "http://localhost:8000/course?mode=all",
+        {
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`, // Send token as Bearer
+          },
+        }
+      );
+      console.log(response.data, "res");
+      setCourseData(response?.data?.data as unknown as Course[]);
+    } catch (error) {
+      console.error(error);
+    }
+  }
   return (
     <Box p={6} bg={bg}>
       {role === "teacher" && (
@@ -129,9 +176,10 @@ const Courses = ({ role }: props) => {
       )}
 
       <Flex flexWrap="wrap" justifyContent="start" gap={8}>
-        {courseData.data.map((course) => (
+        {courseData?.map((course) => (
           <Box key={course.course_code}>
             <Course
+              course_id={course.course_id}
               course_code={course.course_code}
               course_name={course.course_name}
               course_description={course.course_description}

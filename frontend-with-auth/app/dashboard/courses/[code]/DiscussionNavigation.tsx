@@ -1,10 +1,11 @@
 import { Box, Heading, Button, useColorMode } from "@chakra-ui/react";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 const DiscussionNavigation = ({ code }: { code: string }) => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
+  const router = useRouter();
   return (
     <Box
       borderWidth="1px"
@@ -22,7 +23,7 @@ const DiscussionNavigation = ({ code }: { code: string }) => {
         >
           Discussions
         </Heading>
-        <Button onClick={() => router.push(`/discussions/${code}`)}>
+        <Button onClick={() => router.push(`/discussions/${code}/${1}`)}>
           Go to Discussions
         </Button>
       </Box>
