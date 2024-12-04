@@ -1,11 +1,12 @@
 import { sampleQuizzes } from "@/app/constants";
 import { Box, Flex, Heading, Button, useColorMode } from "@chakra-ui/react";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 const QuizNavigation = ({ code }: { code: string }) => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
+  const router = useRouter();
   return (
     <Box
       borderWidth="1px"
@@ -31,7 +32,9 @@ const QuizNavigation = ({ code }: { code: string }) => {
                 <Button
                   key={quiz.id}
                   colorScheme="teal"
-                  onClick={() => router.push(`/quizzes/${code}/${quiz.id}`)}
+                  onClick={() =>
+                    router.push(`/dashboard/courses/${code}/quiz/${quiz.id}`)
+                  }
                 >
                   {quiz.title}
                 </Button>
