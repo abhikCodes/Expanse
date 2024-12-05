@@ -1,5 +1,5 @@
-from quiz.database import SessionLocal
-from quiz.models import Quiz, Question, Option, QuizXrefUser
+from .database import SessionLocal
+from .models import Quiz, Question, Option, QuizXrefUser
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import SQLAlchemyError
 import datetime

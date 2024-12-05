@@ -1,11 +1,11 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship
-from courses_topics.database import Base
+from ..courses_topics.database import Base
 from sqlalchemy.dialects.postgresql import JSON
 
 # Quiz Table Model
 class Quiz(Base):
-    __tablename__ = 'quizes'
+    __tablename__ = 'quizzes'  # Fixed the table name to match the ForeignKey references
 
     quiz_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
     quiz_description = Column(String, nullable=True)
@@ -27,3 +27,28 @@ class QuizXrefUser(Base):
 
     # Relationships (if needed)
     quiz = relationship('Quiz', back_populates='users')
+
+# Question Model
+class Question(Base):
+    __tablename__ = 'questions'
+
+    question_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
+    quiz_id = Column(Integer, ForeignKey('quizzes.quiz_id'), nullable=False)
+    question_text = Column(String, nullable=False)
+    question_type = Column(String, nullable=False)  # E.g., 'multiple_choice'
+
+    # Relationships (if needed)
+    quiz = relationship('Quiz', back_populates='questions')
+    options = relationship('Option', back_populates='question')
+
+# Option Model
+class Option(Base):
+    __tablename__ = 'options'
+
+    option_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
+    question_id = Column(Integer, ForeignKey('questions.question_id'), nullable=False)
+    option_text = Column(String, nullable=False)
+    is_correct = Column(Integer, nullable=False)  # Use Boolean if possible
+
+    # Relationships (if needed)
+    question = relationship('Question', back_populates='options')
