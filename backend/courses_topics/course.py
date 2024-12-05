@@ -1,5 +1,5 @@
 from typing import Annotated, Optional
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Header
 from fastapi.responses import JSONResponse, Response
 import models, os, sys
 from database import engine, SessionLocal
@@ -11,6 +11,7 @@ from bson import ObjectId
 from fastapi.encoders import jsonable_encoder
 from datetime import datetime
 from backend.common.response_format import success_response, error_response
+from backend.common.token_decoder import token_decoder
 
 router = APIRouter()
 
@@ -24,7 +25,7 @@ def get_db():
 db_dependency = Annotated[Session, Depends(get_db)]
 
 MONGO_URI = "mongodb://localhost:27017"  
-MONGO_DB_NAME = "file_storage"
+MONGO_DB_NAME = "expanseDB"
 client = MongoClient(MONGO_URI)
 db_mongo = client[MONGO_DB_NAME]
 fs = GridFS(db_mongo)
@@ -75,14 +76,29 @@ async def get_course(db: db_dependency, course_id: int = None, mode: str = None)
 
 """POST API: to create a new course..."""
 @router.post("/course")
-async def create_course(course: CourseCreate, db: db_dependency):
+async def create_course(course: CourseCreate, db: db_dependency, authorization: str = Header(...)):
     try:
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+
         db_course = models.Courses(
             course_code=course.course_code, 
             course_name=course.course_name, 
             course_description=course.course_description,
-            course_created_by=course.course_created_by,
-            course_updated_by=course.course_updated_by
+            course_created_by=user_id,
+            course_updated_by=user_id
         )
         try:
             db.add(db_course)

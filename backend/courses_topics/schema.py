@@ -6,8 +6,6 @@ class CourseBase(BaseModel):
     course_code: Optional[str] = None
     course_name: Optional[str] = None
     course_description: Optional[str] = None
-    course_created_by: Optional[int] = None
-    course_updated_by: Optional[int] = None
     class Config:
         from_attributes=True
 
@@ -18,6 +16,8 @@ class CourseCreate(CourseBase):
 
 class CourseResponse(CourseBase):
     course_id: Optional[int] = None
+    course_created_by: Optional[str] = None
+    course_updated_by: Optional[str] = None
     course_created_timestamp: Optional[datetime] = None
     course_updated_timestamp: Optional[datetime] = None
     class Config:
@@ -29,8 +29,6 @@ class TopicBase(BaseModel):
     topic_name: Optional[str] = None
     topic_description: Optional[str] = None
     topic_is_released: Optional[bool] = False
-    topic_created_by: Optional[int] = None
-    topic_updated_by: Optional[int] = None
     class Config:
         from_attributes=True
 
@@ -39,6 +37,8 @@ class TopicCreate(TopicBase):
 
 class TopicResponse(TopicBase):
     topic_id: Optional[int] = None
+    topic_created_by: Optional[str] = None
+    topic_updated_by: Optional[str] = None
     topic_created_timestamp: Optional[datetime] = None
     topic_updated_timestamp: Optional[datetime] = None
     class Config:
@@ -49,8 +49,6 @@ class ContentBase(BaseModel):
     course_id: Optional[int] = None
     topic_id: Optional[int] = None
     content_id: Optional[str] = None
-    content_created_by: Optional[int] = None
-    content_updated_by: Optional[int] = None
     content_created_timestamp: Optional[datetime] = None
     content_updated_timestamp: Optional[datetime] = None
     class Config:
@@ -59,7 +57,7 @@ class ContentBase(BaseModel):
 
 class UserEnroll(BaseModel):
     course_id: Optional[int] = None
-    user_id: Optional[int] = None
+    user_id: Optional[str] = None
     class Config:
         from_attributes=True
 
