@@ -7,12 +7,13 @@ const QuizNavigation = ({ code }: { code: string }) => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
   const router = useRouter();
+
   return (
     <Box
       borderWidth="1px"
       borderRadius="lg"
       boxShadow="lg"
-      p={6}
+      p={{ base: 4, md: 6 }}
       mt={6}
       bg={isDarkMode ? "gray.800" : "white"}
     >
@@ -26,20 +27,19 @@ const QuizNavigation = ({ code }: { code: string }) => {
           >
             Quizzes
           </Heading>
-          <Flex>
-            <Flex align="start" flexWrap="wrap" gap={3}>
-              {sampleQuizzes.map((quiz) => (
-                <Button
-                  key={quiz.id}
-                  colorScheme="teal"
-                  onClick={() =>
-                    router.push(`/dashboard/courses/${code}/quiz/${quiz.id}`)
-                  }
-                >
-                  {quiz.title}
-                </Button>
-              ))}
-            </Flex>
+          <Flex wrap="wrap" gap={3}>
+            {sampleQuizzes.map((quiz) => (
+              <Button
+                key={quiz.id}
+                colorScheme="teal"
+                onClick={() =>
+                  router.push(`/dashboard/courses/${code}/quiz/${quiz.id}`)
+                }
+                width={{ base: "100%", sm: "auto" }} // Buttons stack full-width on small screens
+              >
+                {quiz.title}
+              </Button>
+            ))}
           </Flex>
         </Box>
       </Flex>
