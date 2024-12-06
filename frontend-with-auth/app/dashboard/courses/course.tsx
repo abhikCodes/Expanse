@@ -2,7 +2,6 @@
 import {
   Box,
   Text,
-  Image,
   Stack,
   Button,
   Flex,
@@ -52,17 +51,83 @@ const Course = ({
         boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
       }}
     >
-      <Image
-        src={`https://via.placeholder.com/300?text=${encodeURIComponent(
-          course_code
-        )}`}
-        alt={course_name}
-        objectFit="cover"
-        width="100%"
+      <Box
         height="180px"
-        transition="transform 0.3s"
-        _hover={{ transform: "scale(1.1)" }}
-      />
+        width="100%"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        borderRadius="md"
+        mb={4}
+        bgGradient="linear(to-br, teal.400, blue.500)"
+        position="relative"
+        overflow="hidden"
+        transition="transform 0.3s ease, box-shadow 0.3s ease"
+        _hover={{
+          transform: "scale(1.05)",
+          boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
+        }}
+      >
+        {/* Background Pattern */}
+        <Box
+          position="absolute"
+          width="150%"
+          height="150%"
+          backgroundImage="radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.15), rgba(0, 0, 0, 0.05))"
+          transform="rotate(45deg)"
+          zIndex={1}
+          opacity={0.4}
+        />
+
+        {/* Icon */}
+        <Box
+          zIndex={2}
+          display="flex"
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          textAlign="center"
+        >
+          <Box
+            as="svg"
+            xmlns="http://www.w3.org/2000/svg"
+            width="50px"
+            height="50px"
+            fill="white"
+            viewBox="0 0 24 24"
+            mb={2}
+          >
+            <circle
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="white"
+              strokeWidth="2"
+              fill="none"
+            />
+            <line
+              x1="12"
+              y1="8"
+              x2="12"
+              y2="12"
+              stroke="white"
+              strokeWidth="2"
+            />
+            <line
+              x1="12"
+              y1="16"
+              x2="12.01"
+              y2="16"
+              stroke="white"
+              strokeWidth="2"
+            />
+          </Box>
+          <Text fontSize="sm" color="white" fontWeight="bold">
+            {course_code}
+          </Text>
+        </Box>
+      </Box>
+
       <Stack spacing={3} mt={4}>
         <Text fontSize="lg" fontWeight="bold" color={color}>
           {course_code}

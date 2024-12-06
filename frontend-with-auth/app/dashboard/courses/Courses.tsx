@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-// import { courseData } from "@/app/constants";
 import {
   Box,
   Flex,
@@ -17,11 +16,13 @@ import {
   useDisclosure,
   useColorModeValue,
   Text,
+  useToast,
 } from "@chakra-ui/react";
 import Course from "./course";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { useSession } from "next-auth/react";
+import { API_BASE_URL } from "@/app/constants";
 
 interface props {
   role: string;
@@ -49,6 +50,7 @@ interface CourseResponse {
 
 const Courses = ({ role }: props) => {
   const router = useRouter();
+  const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const {
     isOpen: isDeleteModalOpen,
@@ -56,7 +58,7 @@ const Courses = ({ role }: props) => {
     onClose: onDeleteModalClose,
   } = useDisclosure();
 
-  const { status, data: sessionData } = useSession();
+  const { data: sessionData } = useSession();
 
   const [newCourse, setNewCourse] = useState({
     course_code: "",
@@ -64,9 +66,7 @@ const Courses = ({ role }: props) => {
     course_description: "",
   });
 
-  console.log(sessionData, "session");
-  console.log(status, "session");
-  const [courseToDelete, setCourseToDelete] = useState<string | null>(null);
+  const [courseToDelete, setCourseToDelete] = useState<number | null>(null);
   const [courseData, setCourseData] = useState<Course[] | null>(null);
 
   const handleClick = (course_id: number) => {
@@ -76,51 +76,134 @@ const Courses = ({ role }: props) => {
   const handleEdit = (course_code: string) => {
     console.log(`Edit course: ${course_code}`);
     router.push("/dashboard/courses/" + course_code);
-    // Implement edit logic
   };
 
-  const handleDelete = (course_code: string) => {
-    setCourseToDelete(course_code);
-    onDeleteModalOpen(); // Open delete confirmation modal
+  const handleDelete = (course_id: number) => {
+    setCourseToDelete(course_id);
+    onDeleteModalOpen();
   };
 
-  const confirmDeleteCourse = () => {
-    if (courseToDelete) {
-      console.log(`Course deleted: ${courseToDelete}`);
-      // Implement delete logic here, such as making an API call or removing the course from the state
+  const confirmDeleteCourse = async () => {
+    if (!courseToDelete) return;
+
+    try {
+      await axios.delete(`${API_BASE_URL}course?mode=all`, {
+        params: { course_id: courseToDelete },
+        headers: {
+          Authorization: `Bearer ${sessionData?.idToken}`,
+        },
+      });
+      setCourseData(
+        (prevData) =>
+          prevData?.filter((course) => course.course_id !== courseToDelete) ||
+          []
+      );
+      toast({
+        title: "Course deleted.",
+        description: `Course with ID ${courseToDelete} has been deleted.`,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+      setCourseToDelete(null);
+    } catch (error) {
+      toast({
+        title: "Error deleting course.",
+        description: "Failed to delete the course. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+      console.error("Failed to delete course:", error);
     }
-    onDeleteModalClose(); // Close the modal
+    onDeleteModalClose();
   };
 
-  const handleAddCourse = () => {
-    console.log("Add new course:", newCourse);
-    // Add logic to save new course
-    setNewCourse({ course_code: "", course_name: "", course_description: "" });
-    onClose();
+  const handleAddCourse = async () => {
+    if (
+      !newCourse.course_code ||
+      !newCourse.course_name ||
+      !newCourse.course_description
+    ) {
+      toast({
+        title: "Invalid input.",
+        description: "Please fill out all fields before submitting.",
+        status: "warning",
+        duration: 3000,
+        isClosable: true,
+      });
+      return;
+    }
+
+    try {
+      await axios.post(
+        `${API_BASE_URL}course`,
+        {
+          course_code: newCourse.course_code,
+          course_name: newCourse.course_name,
+          course_description: newCourse.course_description,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`,
+          },
+        }
+      );
+
+      toast({
+        title: "Course added.",
+        description: `Course ${newCourse.course_name} has been added successfully.`,
+        status: "success",
+        duration: 3000,
+        position: "top",
+        isClosable: true,
+      });
+
+      getCourses();
+
+      setNewCourse({
+        course_code: "",
+        course_name: "",
+        course_description: "",
+      });
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Error adding course.",
+        description: "Failed to add the course. Please try again.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+      console.error("Failed to create course:", error);
+    }
   };
 
   useEffect(() => {
-    getUser();
+    getCourses();
   }, []);
 
   const bg = useColorModeValue("neutral.500", "neutral.50._dark");
 
-  async function getUser() {
+  async function getCourses() {
     try {
       const response = await axios.get<CourseResponse>(
-        "http://localhost:8000/course?mode=all",
+        `${API_BASE_URL}course?mode=all`,
         {
           headers: {
-            Authorization: `Bearer ${sessionData?.idToken}`, // Send token as Bearer
+            Authorization: `Bearer ${sessionData?.idToken}`,
           },
         }
       );
-      console.log(response.data, "res");
       setCourseData(response?.data?.data as unknown as Course[]);
     } catch (error) {
       console.error(error);
     }
   }
+
   return (
     <Box p={6} bg={bg}>
       {role === "teacher" && (
@@ -185,14 +268,13 @@ const Courses = ({ role }: props) => {
               course_description={course.course_description}
               role={role}
               onEdit={handleEdit}
-              onDelete={() => handleDelete(course.course_code)} // Pass the course code to handleDelete
+              onDelete={() => handleDelete(course.course_id)}
               onClick={handleClick}
             />
           </Box>
         ))}
       </Flex>
 
-      {/* Delete Confirmation Modal */}
       <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
         <ModalOverlay />
         <ModalContent>
