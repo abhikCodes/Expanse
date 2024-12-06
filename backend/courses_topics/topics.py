@@ -148,11 +148,22 @@ async def get_topic(db: db_dependency, course_id: int, topic_id: int = None, mod
                 status_code=404, 
                 content=error_response(message="Topics Not Found")
             )
+
+        response_data = []
+        for top in result:
+            top_id = top.topic_id
+            cont_objs = db.query(models.Contents).filter(models.Contents.topic_id == top_id).all()
+            content_id_lst = [obj.content_id for obj in cont_objs]
+
+            tmp_data = TopicResponse.model_validate(top).model_dump()
+            tmp_data['content_id'] = content_id_lst
+            response_data.append(tmp_data)
+
         
         return JSONResponse(
             status_code=200,
             content=success_response(
-                data=jsonable_encoder([TopicResponse.model_validate(top).model_dump() for top in result]), 
+                data=jsonable_encoder(response_data), 
                 message="Topics retrieved successfully"
             )
         )
