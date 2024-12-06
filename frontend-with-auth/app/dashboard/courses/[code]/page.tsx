@@ -31,6 +31,7 @@ interface Props {
 
 const CourseDetails = ({ params: { code } }: Props) => {
   const { data: sessionData } = useSession();
+  const role = sessionData?.user.role;
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
 
@@ -142,6 +143,12 @@ const CourseDetails = ({ params: { code } }: Props) => {
         },
       });
       if (response.status === 204) {
+        // Update state directly by filtering out the deleted topic
+        setTopics((prevTopics) =>
+          prevTopics.filter((topic) => topic.topic_id !== topic_id)
+        );
+
+        // Show success toast
         toast({
           title: "Topic deleted.",
           description: `Topic has been deleted.`,
@@ -150,9 +157,9 @@ const CourseDetails = ({ params: { code } }: Props) => {
           isClosable: true,
           position: "top",
         });
-        fetchTopics(); // Refresh topics list
       }
     } catch (error) {
+      // Show error toast
       toast({
         title: "Error deleting Topic.",
         description: "Failed to delete the Topic. Please try again.",
@@ -195,9 +202,11 @@ const CourseDetails = ({ params: { code } }: Props) => {
         <Text>Error loading course details.</Text>
       )}
 
-      <Button onClick={openCreateTopicModal} colorScheme="teal" mb={4}>
-        Create New Topic
-      </Button>
+      {role === "teacher" && (
+        <Button onClick={openCreateTopicModal} colorScheme="teal" mb={4}>
+          Create New Topic
+        </Button>
+      )}
 
       {/* Create Topic Modal */}
       <CreateTopicModal
@@ -242,13 +251,15 @@ const CourseDetails = ({ params: { code } }: Props) => {
                     <AccordionPanel pb={4}>
                       <HStack justify="space-between">
                         <Text mb={4}>{topic.topic_description}</Text>
-                        <Button
-                          size="sm"
-                          colorScheme="red"
-                          onClick={() => deleteTopic(topic.topic_id)}
-                        >
-                          Delete Topic
-                        </Button>
+                        {role === "teacher" && (
+                          <Button
+                            size="sm"
+                            colorScheme="red"
+                            onClick={() => deleteTopic(topic.topic_id)}
+                          >
+                            Delete Topic
+                          </Button>
+                        )}
                       </HStack>
                       {loadingContent ? (
                         <Spinner />
