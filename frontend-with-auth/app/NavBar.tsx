@@ -10,19 +10,27 @@ import {
   MenuItem,
   MenuList,
   Text,
+  IconButton,
   useColorMode,
+  HStack,
+  Divider,
 } from "@chakra-ui/react";
 import Link from "next/link";
 import React from "react";
-import { RiMacbookFill, RiUserLocationFill } from "react-icons/ri";
+import {
+  RiMacbookFill,
+  RiUserLocationFill,
+  RiNotification3Line,
+} from "react-icons/ri";
 import ToggleThemeButton from "./components/useColorMode";
-// import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { notifications } from "./constants";
 
 const NavBar = () => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
   const { status, data: sessionData } = useSession();
+
   return (
     <Box
       className="py-2 border-b-2 drop-shadow-md"
@@ -57,6 +65,53 @@ const NavBar = () => {
             </Flex>
           </Link>
           <Flex align="center" gap="3">
+            {/* Notifications Menu */}
+            <Menu placement={"bottom"}>
+              <MenuButton
+                as={IconButton}
+                aria-label="Notifications"
+                icon={<RiNotification3Line />}
+                variant="ghost"
+                size="lg"
+                color={isDarkMode ? "whiteAlpha.900" : "gray.600"}
+                _hover={{ bg: isDarkMode ? "gray.700" : "gray.200" }}
+              />
+              <MenuList maxH="300px" overflowY="auto" p={2}>
+                {notifications.map((notification) => (
+                  <Box width={"sm"} key={notification.id} mb={2}>
+                    <HStack justify="space-between" align="start">
+                      <Box>
+                        <Text fontWeight="bold" color="teal.900" fontSize="sm">
+                          {notification.title}
+                        </Text>
+                        <Text
+                          fontWeight="normal"
+                          color="teal.700"
+                          fontSize="sm"
+                        >
+                          {notification.description}
+                        </Text>
+                      </Box>
+                      <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">
+                        {notification.date}
+                      </Text>
+                    </HStack>
+                    <Divider my={2} />
+                  </Box>
+                ))}
+                {notifications.length === 0 && (
+                  <Text textAlign="center" p={3} color="gray.500">
+                    No notifications
+                  </Text>
+                )}
+              </MenuList>
+            </Menu>
+            <Menu>
+              <Box fontWeight="semibold" justifySelf="center">
+                <Text>{sessionData?.["user"]?.["name"]}</Text>
+              </Box>
+            </Menu>
+            {/* Login/Register/Profile */}
             {status === "unauthenticated" && (
               <>
                 <Link href="/api/auth/signin">Login</Link>
@@ -64,7 +119,7 @@ const NavBar = () => {
               </>
             )}
             {status === "authenticated" && (
-              <Menu flip={false}>
+              <Menu placement={"bottom"}>
                 <MenuButton>
                   <Avatar
                     referrerPolicy="no-referrer"
