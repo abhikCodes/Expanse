@@ -66,6 +66,7 @@ const Courses = ({ role }: props) => {
     course_description: "",
   });
 
+  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
   const [courseToDelete, setCourseToDelete] = useState<number | null>(null);
   const [courseData, setCourseData] = useState<Course[] | null>(null);
 
@@ -73,9 +74,14 @@ const Courses = ({ role }: props) => {
     router.push(`/dashboard/courses/${course_id}`);
   };
 
-  const handleEdit = (course_code: string) => {
-    console.log(`Edit course: ${course_code}`);
-    router.push("/dashboard/courses/" + course_code);
+  const handleEdit = (course: Course) => {
+    setCourseToEdit(course);
+    setNewCourse({
+      course_code: course.course_code,
+      course_name: course.course_name,
+      course_description: course.course_description,
+    });
+    onOpen();
   };
 
   const handleDelete = (course_id: number) => {
@@ -121,7 +127,7 @@ const Courses = ({ role }: props) => {
     onDeleteModalClose();
   };
 
-  const handleAddCourse = async () => {
+  const handleAddOrEditCourse = async () => {
     if (
       !newCourse.course_code ||
       !newCourse.course_name ||
@@ -132,35 +138,44 @@ const Courses = ({ role }: props) => {
         description: "Please fill out all fields before submitting.",
         status: "warning",
         duration: 3000,
+        position: "top",
         isClosable: true,
       });
       return;
     }
 
+    const payload = {
+      course_code: newCourse.course_code,
+      course_name: newCourse.course_name,
+      course_description: newCourse.course_description,
+    };
+    let desc = "";
     try {
-      await axios.post(
-        `${API_BASE_URL}course`,
-        {
-          course_code: newCourse.course_code,
-          course_name: newCourse.course_name,
-          course_description: newCourse.course_description,
-        },
-        {
+      if (courseToEdit) {
+        desc = `Course ${newCourse.course_name} has been updated successfully.`;
+        await axios.put(`${API_BASE_URL}course`, payload, {
+          params: { course_id: courseToEdit.course_id },
           headers: {
             Authorization: `Bearer ${sessionData?.idToken}`,
           },
-        }
-      );
+        });
+      } else {
+        desc = `Course ${newCourse.course_name} has been updated successfully.`;
+        await axios.post(`${API_BASE_URL}course`, payload, {
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`,
+          },
+        });
+      }
 
       toast({
         title: "Course added.",
-        description: `Course ${newCourse.course_name} has been added successfully.`,
+        description: desc,
         status: "success",
         duration: 3000,
         position: "top",
         isClosable: true,
       });
-
       getCourses();
 
       setNewCourse({
@@ -168,17 +183,23 @@ const Courses = ({ role }: props) => {
         course_name: "",
         course_description: "",
       });
+      setCourseToEdit(null);
       onClose();
     } catch (error) {
       toast({
-        title: "Error adding course.",
-        description: "Failed to add the course. Please try again.",
+        title: `Error ${courseToEdit ? "updating" : "adding"} course.`,
+        description: `Failed to ${
+          courseToEdit ? "update" : "add"
+        } the course. Please try again.`,
         status: "error",
         duration: 3000,
         isClosable: true,
         position: "top",
       });
-      console.error("Failed to create course:", error);
+      console.error(
+        `Failed to ${courseToEdit ? "update" : "create"} course:`,
+        error
+      );
     }
   };
 
@@ -211,10 +232,18 @@ const Courses = ({ role }: props) => {
           <Button colorScheme="teal" onClick={onOpen} mb={6}>
             Add New Course
           </Button>
-          <Modal isOpen={isOpen} onClose={onClose}>
+          <Modal
+            isOpen={isOpen}
+            onClose={() => {
+              onClose();
+              setCourseToEdit(null);
+            }}
+          >
             <ModalOverlay />
             <ModalContent>
-              <ModalHeader>Add New Course</ModalHeader>
+              <ModalHeader>
+                {courseToEdit ? "Edit Course" : "Add New Course"}
+              </ModalHeader>
               <ModalCloseButton />
               <ModalBody>
                 <Input
@@ -247,7 +276,7 @@ const Courses = ({ role }: props) => {
               <ModalFooter>
                 <Button
                   colorScheme="blue"
-                  onClick={handleAddCourse}
+                  onClick={handleAddOrEditCourse}
                   bg="primary.900"
                 >
                   Save
@@ -267,7 +296,7 @@ const Courses = ({ role }: props) => {
               course_name={course.course_name}
               course_description={course.course_description}
               role={role}
-              onEdit={handleEdit}
+              onEdit={() => handleEdit(course)}
               onDelete={() => handleDelete(course.course_id)}
               onClick={handleClick}
             />

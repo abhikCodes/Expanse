@@ -105,22 +105,6 @@ const Course = ({
               strokeWidth="2"
               fill="none"
             />
-            <line
-              x1="12"
-              y1="8"
-              x2="12"
-              y2="12"
-              stroke="white"
-              strokeWidth="2"
-            />
-            <line
-              x1="12"
-              y1="16"
-              x2="12.01"
-              y2="16"
-              stroke="white"
-              strokeWidth="2"
-            />
           </Box>
           <Text fontSize="sm" color="white" fontWeight="bold">
             {course_code}
@@ -135,9 +119,11 @@ const Course = ({
         <Text fontSize="xl" fontWeight="semibold" color={color}>
           {course_name}
         </Text>
-        <Text fontSize="sm" color={color}>
-          {course_description}
-        </Text>
+        <Box maxHeight="60px" overflowY="auto">
+          <Text fontSize="sm" color={color}>
+            {course_description}
+          </Text>
+        </Box>
         {role === "teacher" && (
           <Flex mt={4} gap={4}>
             <Button

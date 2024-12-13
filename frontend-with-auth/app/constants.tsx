@@ -289,3 +289,38 @@ export const notifications = [
 ];
 
 export const API_BASE_URL = "http://localhost:8000/";
+
+export const DUMMY_QUIZZES = {
+  student: [
+    {
+      course_code: "COMP40073",
+      quizzes: [
+        { quiz_name: "Midterm", status: "completed", score: 8 },
+        { quiz_name: "Final", status: "pending" },
+      ],
+    },
+    {
+      course_code: "COMP20050",
+      quizzes: [
+        { quiz_name: "Quiz 1", status: "expired" },
+        { quiz_name: "Quiz 2", status: "pending" },
+      ],
+    },
+  ],
+  teacher: [
+    {
+      course_code: "COMP40073",
+      quizzes: [
+        { quiz_name: "Midterm", status: "expired" },
+        { quiz_name: "Final", status: "pending" },
+      ],
+    },
+    {
+      course_code: "COMP20050",
+      quizzes: [
+        { quiz_name: "Quiz 1", status: "pending" },
+        { quiz_name: "Quiz 2", status: "pending" },
+      ],
+    },
+  ],
+};
