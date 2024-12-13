@@ -2,9 +2,27 @@ import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import prisma from "@/prisma/client";
+import type { AdapterUser } from "next-auth/adapters";
 
 const handler = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: {
+    ...PrismaAdapter(prisma),
+    async createUser(profile: AdapterUser) {
+      const isTeacher = profile.email!.endsWith("@gmail.com");
+
+      // Custom user creation logic to assign role based on email
+      const newUser = await prisma.user.create({
+        data: {
+          name: profile.name,
+          email: profile.email,
+          image: profile.image,
+          role: isTeacher ? "teacher" : "student",
+        },
+      });
+
+      return newUser;
+    },
+  },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -12,28 +30,9 @@ const handler = NextAuth({
     }),
   ],
   session: {
-    strategy: "jwt", // Using JWT strategy
+    strategy: "jwt",
   },
   callbacks: {
-    async signIn({ user }) {
-      // Check if the user already exists in the database
-      const existingUser = await prisma.user.findUnique({
-        where: { email: user.email! },
-      });
-
-      if (existingUser) {
-        const isTeacher = user.email!.endsWith("@gmail.com");
-        await prisma.user.update({
-          where: { email: user.email! },
-          data: {
-            role: isTeacher ? "teacher" : "student",
-          },
-        });
-      }
-
-      return true;
-    },
-
     async session({ session, token }) {
       // if (user?.role) {
       //   session.user.role = user.role;
