@@ -68,6 +68,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
         description: "Please fill all required fields and upload a file.",
         status: "error",
         duration: 3000,
+        position: "top",
         isClosable: true,
       });
       return;
@@ -94,6 +95,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
           title: "Success",
           description: "Topic created successfully!",
           status: "success",
+          position: "top",
           duration: 3000,
           isClosable: true,
         });
@@ -112,6 +114,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
         title: "Error",
         description: "Failed to create topic.",
         status: "error",
+        position: "top",
         duration: 3000,
         isClosable: true,
       });

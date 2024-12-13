@@ -3,7 +3,7 @@ import React from "react";
 import { useSession } from "next-auth/react";
 import Courses from "@/app/dashboard/courses/Courses";
 import { Grid, GridItem } from "@chakra-ui/react";
-import ProfilePage from "./profile/page";
+import BasicDetails from "./profile/BasicDetails";
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
@@ -22,7 +22,7 @@ const Dashboard = () => {
         colSpan={{ base: 0, md: 2 }}
         display={{ base: "none", md: "block" }}
       >
-        <ProfilePage />
+        <BasicDetails />
       </GridItem>
     </Grid>
   );

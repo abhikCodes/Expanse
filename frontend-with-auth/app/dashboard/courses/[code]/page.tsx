@@ -17,6 +17,13 @@ import {
   Button,
   HStack,
   useToast,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
 } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
 import QuizNavigation from "./QuizNavigation";
@@ -38,6 +45,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
   const [courseDetails, setCourseDetails] = useState<{
     course_name: string;
     course_description: string;
+    course_code: string;
   } | null>(null);
 
   const [topics, setTopics] = useState<
@@ -58,9 +66,18 @@ const CourseDetails = ({ params: { code } }: Props) => {
   const [loadingContent, setLoadingContent] = useState(false);
 
   const [isCreateTopicModalOpen, setCreateTopicModalOpen] = useState(false);
+  const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
+
   const toast = useToast();
   const openCreateTopicModal = () => setCreateTopicModalOpen(true);
   const closeCreateTopicModal = () => setCreateTopicModalOpen(false);
+
+  const openDeleteModal = (topic_id: string) => {
+    setTopicToDelete(topic_id);
+    setDeleteModalOpen(true);
+  };
+  const closeDeleteModal = () => setDeleteModalOpen(false);
 
   // Fetch course details
   useEffect(() => {
@@ -76,6 +93,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
           setCourseDetails({
             course_name: course.course_name,
             course_description: course.course_description,
+            course_code: course.course_code,
           });
         }
       } catch (error) {
@@ -134,21 +152,21 @@ const CourseDetails = ({ params: { code } }: Props) => {
   };
 
   // Handle topic deletion
-  const deleteTopic = async (topic_id: string) => {
+  const confirmDeleteTopic = async () => {
+    if (!topicToDelete) return;
+
     try {
       const response = await axios.delete(API_BASE_URL + "topics", {
-        params: { topic_id },
+        params: { topic_id: topicToDelete },
         headers: {
           Authorization: `Bearer ${sessionData?.idToken}`,
         },
       });
       if (response.status === 204) {
-        // Update state directly by filtering out the deleted topic
         setTopics((prevTopics) =>
-          prevTopics.filter((topic) => topic.topic_id !== topic_id)
+          prevTopics.filter((topic) => topic.topic_id !== topicToDelete)
         );
 
-        // Show success toast
         toast({
           title: "Topic deleted.",
           description: `Topic has been deleted.`,
@@ -159,7 +177,6 @@ const CourseDetails = ({ params: { code } }: Props) => {
         });
       }
     } catch (error) {
-      // Show error toast
       toast({
         title: "Error deleting Topic.",
         description: "Failed to delete the Topic. Please try again.",
@@ -169,6 +186,8 @@ const CourseDetails = ({ params: { code } }: Props) => {
         position: "top",
       });
       console.error("Error deleting topic:", error);
+    } finally {
+      closeDeleteModal();
     }
   };
 
@@ -188,15 +207,16 @@ const CourseDetails = ({ params: { code } }: Props) => {
             size="xl"
             color={isDarkMode ? "neutral.900" : "primary.900"}
           >
-            {courseDetails.course_name} - {code}
+            {courseDetails.course_name} - {courseDetails.course_code}
           </Heading>
-          <Text
-            fontSize="lg"
-            mt={4}
-            color={isDarkMode ? "neutral.700" : "neutral.700"}
-          >
-            {courseDetails.course_description}
-          </Text>
+          <Box mt={4} p={4} maxH="120px" overflowY="auto" borderRadius="md">
+            <Text
+              fontSize="lg"
+              color={isDarkMode ? "neutral.700" : "neutral.700"}
+            >
+              {courseDetails.course_description}
+            </Text>
+          </Box>
         </Box>
       ) : (
         <Text>Error loading course details.</Text>
@@ -215,6 +235,29 @@ const CourseDetails = ({ params: { code } }: Props) => {
         courseId={code}
         onTopicCreated={handleTopicCreated}
       />
+
+      {/* Confirm Delete Modal */}
+      <Modal isOpen={isDeleteModalOpen} onClose={closeDeleteModal}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Confirm Delete</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Text>
+              All uploaded files will be deleted as well. Are you sure you want
+              to delete this topic?
+            </Text>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="red" onClick={confirmDeleteTopic} mr={3}>
+              Delete
+            </Button>
+            <Button variant="ghost" onClick={closeDeleteModal}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       <Grid templateColumns="repeat(12, 1fr)" gap={8}>
         {/* Topics Section */}
@@ -253,9 +296,10 @@ const CourseDetails = ({ params: { code } }: Props) => {
                         <Text mb={4}>{topic.topic_description}</Text>
                         {role === "teacher" && (
                           <Button
+                            minWidth="120px"
                             size="sm"
                             colorScheme="red"
-                            onClick={() => deleteTopic(topic.topic_id)}
+                            onClick={() => openDeleteModal(topic.topic_id)}
                           >
                             Delete Topic
                           </Button>
