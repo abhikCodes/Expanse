@@ -11,13 +11,15 @@ import {
   FormLabel,
   Input,
   Textarea,
-  Checkbox,
+  // Checkbox,
   Button,
   useToast,
   VStack,
   Box,
   Text,
+  IconButton,
 } from "@chakra-ui/react";
+import { CloseIcon } from "@chakra-ui/icons";
 import axios from "axios";
 import { useSession } from "next-auth/react";
 import { API_BASE_URL } from "@/app/constants";
@@ -38,8 +40,8 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
   const [newTopic, setNewTopic] = useState({
     topic_name: "",
     topic_description: "",
-    topic_is_released: false,
-    file: null as File | null,
+    topic_is_released: true,
+    files: [] as File[],
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const toast = useToast();
@@ -53,19 +55,53 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    setNewTopic((prev) => ({ ...prev, file }));
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter((file) =>
+      ["application/pdf", "video/mp4"].includes(file.type)
+    );
+    const invalidFiles = files.filter(
+      (file) => !["application/pdf", "video/mp4"].includes(file.type)
+    );
+
+    if (invalidFiles.length > 0) {
+      toast({
+        title: "Invalid File Type",
+        description: "Only PDF and video files (MP4) are allowed.",
+        status: "error",
+        duration: 3000,
+        position: "top",
+        isClosable: true,
+      });
+    }
+
+    setNewTopic((prev) => ({
+      ...prev,
+      files: [...prev.files, ...validFiles],
+    }));
   };
 
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setNewTopic((prev) => ({ ...prev, topic_is_released: e.target.checked }));
+  const handleRemoveFile = (index: number) => {
+    setNewTopic((prev) => {
+      const updatedFiles = [...prev.files];
+      updatedFiles.splice(index, 1);
+      return { ...prev, files: updatedFiles };
+    });
   };
+
+  // const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   setNewTopic((prev) => ({ ...prev, topic_is_released: e.target.checked }));
+  // };
 
   const handleSubmit = async () => {
-    if (!newTopic.topic_name || !newTopic.topic_description || !newTopic.file) {
+    if (
+      !newTopic.topic_name ||
+      !newTopic.topic_description ||
+      newTopic.files.length === 0
+    ) {
       toast({
         title: "Validation Error",
-        description: "Please fill all required fields and upload a file.",
+        description:
+          "Please fill all required fields and upload at least one valid file.",
         status: "error",
         duration: 3000,
         position: "top",
@@ -80,7 +116,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
     formData.append("topic_description", newTopic.topic_description);
     formData.append("course_id", courseId);
     formData.append("topic_is_released", String(newTopic.topic_is_released));
-    formData.append("file", newTopic.file);
+    newTopic.files.forEach((file) => formData.append("files", file));
 
     try {
       const response = await axios.post(API_BASE_URL + "topics", formData, {
@@ -103,7 +139,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
           topic_name: "",
           topic_description: "",
           topic_is_released: false,
-          file: null,
+          files: [],
         });
         onClose();
         onTopicCreated();
@@ -157,7 +193,7 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
               />
             </FormControl>
 
-            <FormControl>
+            {/* <FormControl>
               <Checkbox
                 isChecked={newTopic.topic_is_released}
                 onChange={handleCheckboxChange}
@@ -165,28 +201,22 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
               >
                 Release Topic
               </Checkbox>
-            </FormControl>
+            </FormControl> */}
 
             <FormControl isRequired>
-              <FormLabel>Upload File</FormLabel>
+              <FormLabel>Upload Files</FormLabel>
               <Box position="relative">
-                {/* Hidden File Input */}
                 <Input
                   type="file"
-                  accept=".pdf"
+                  accept=".pdf,video/mp4"
+                  multiple
                   onChange={handleFileChange}
                   display="none"
                   id="file-upload"
                 />
-                {/* Custom Upload Button */}
                 <Button
                   as="label"
                   htmlFor="file-upload"
-                  // leftIcon={
-                  //   <Box as="span" aria-hidden="true">
-                  //     📄
-                  //   </Box>
-                  // }
                   colorScheme="teal"
                   variant="solid"
                   width="full"
@@ -195,13 +225,36 @@ const CreateTopicModal: React.FC<CreateTopicModalProps> = ({
                   _hover={{ bg: "teal.600" }}
                   _active={{ bg: "teal.700" }}
                 >
-                  {newTopic.file ? "File Selected" : "Choose File"}
+                  {newTopic.files.length > 0
+                    ? `${newTopic.files.length} File(s) Selected`
+                    : "Choose Files"}
                 </Button>
-                {/* Display selected file name */}
-                {newTopic.file && (
-                  <Text mt={2} fontSize="sm" color="gray.600">
-                    {newTopic.file.name}
-                  </Text>
+                {newTopic.files.length > 0 && (
+                  <Box mt={2}>
+                    {newTopic.files.map((file, index) => (
+                      <Box
+                        key={index}
+                        display="flex"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        mb={1}
+                        p={2}
+                        border="1px solid"
+                        borderColor="gray.200"
+                        borderRadius="md"
+                      >
+                        <Text fontSize="sm" color="gray.600">
+                          {file.name}
+                        </Text>
+                        <IconButton
+                          size="sm"
+                          icon={<CloseIcon />}
+                          onClick={() => handleRemoveFile(index)}
+                          aria-label="Remove file"
+                        />
+                      </Box>
+                    ))}
+                  </Box>
                 )}
               </Box>
             </FormControl>
