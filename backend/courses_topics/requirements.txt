@@ -9,3 +9,6 @@ boto3
 pymongo
 motor
 PyJWT
+grpcio
+grpcio-tools
+protobuf

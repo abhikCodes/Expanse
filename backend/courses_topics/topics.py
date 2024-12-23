@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, List
 from fastapi import APIRouter, Depends, File, UploadFile, Form, Header
 from fastapi.responses import JSONResponse, Response, StreamingResponse
 import models, os, sys
@@ -40,7 +40,7 @@ async def create_topic(
     topic_description: str = Form(...), 
     course_id: int = Form(...), 
     topic_is_released: bool = Form(...), 
-    file: UploadFile = File(...), 
+    files: List[UploadFile] = File(...), 
     authorization: str = Header(...)):
     try:
         if not authorization.startswith("Bearer "):
@@ -74,35 +74,38 @@ async def create_topic(
             db.commit()
             db.refresh(db_topic)
 
-            gridfs_id = fs.put(
-                file.file,
-                filename=file.filename,
-                content_type=file.content_type,
-                metadata={
-                    "uploader": user_id, 
-                    "course_id": course_id, 
-                    "topic_id": db_topic.topic_id
-                }
-            )
-
-            if gridfs_id:
-                db_content = models.Contents(
-                    course_id=course_id,
-                    topic_id=db_topic.topic_id,
-                    content_id=str(gridfs_id), 
-                    content_created_by=user_id,
-                    content_updated_by=user_id,
-                    content_created_timestamp=datetime.now(),
-                    content_updated_timestamp=datetime.now()
+            content_ids = []
+            for file in files:
+                gridfs_id = fs.put(
+                    file.file,
+                    filename=file.filename,
+                    content_type=file.content_type,
+                    metadata={
+                        "uploader": user_id, 
+                        "course_id": course_id, 
+                        "topic_id": db_topic.topic_id
+                    }
                 )
-                db.add(db_content)
-                db.commit()
-                db.refresh(db_content)
+
+                if gridfs_id:
+                    db_content = models.Contents(
+                        course_id=course_id,
+                        topic_id=db_topic.topic_id,
+                        content_id=str(gridfs_id), 
+                        content_created_by=user_id,
+                        content_updated_by=user_id,
+                        content_created_timestamp=datetime.now(),
+                        content_updated_timestamp=datetime.now()
+                    )
+                    db.add(db_content)
+                    content_ids.append(str(gridfs_id))
+            db.commit()
+            db.refresh(db_content)
 
         except Exception as e:
             db.rollback()
-            if gridfs_id:
-                fs.delete(gridfs_id)
+            for content_id in content_ids:
+                fs.delete(content_id)
             
             return JSONResponse(
                 status_code=500,
@@ -136,12 +139,17 @@ async def create_topic(
 
 """GET API: get all topics for a course OR get all the details for a specific topic using it's ID"""
 @router.get("/topics")
-async def get_topic(db: db_dependency, course_id: int, topic_id: int = None, mode: str = None):
+async def get_topic(db: db_dependency, course_id: int = None, topic_id: int = None, mode: str = None):
     try:
-        if mode == 'all':
+        if mode == 'all' and course_id and not topic_id:
             result = db.query(models.Topics).filter(models.Topics.course_id == course_id).all()
-        else:
+        elif not mode and not course_id and topic_id:
             result = [db.query(models.Topics).filter(models.Topics.topic_id == topic_id).first()]
+        else:
+            return JSONResponse(
+                status_code=404, 
+                content=error_response(message="Inavlid Query Parameters")
+            )
 
         if not result:
             return JSONResponse(

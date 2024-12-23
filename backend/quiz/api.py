@@ -1,9 +1,12 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Header
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 from typing import List
 from pydantic import BaseModel
 from .database import SessionLocal
-from .quiz import create_quiz, get_quiz_by_id, record_user_submission, get_user_results
+from .quiz import create_quiz, get_quiz_by_id, record_user_submission, get_user_results, check_enrollment
+from backend.common.response_format import success_response, error_response
+from backend.common.token_decoder import token_decoder
 
 quiz_bp = APIRouter()
 
@@ -49,14 +52,33 @@ def create_quiz_endpoint(quiz: QuizCreateSchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 # Endpoint to get quiz by ID
-@quiz_bp.get("/quiz/{quiz_id}")
-def get_quiz_endpoint(quiz_id: int, db: Session = Depends(get_db)):
+@quiz_bp.get("/quiz/{quiz_id}/{course_id}")
+def get_quiz_endpoint(quiz_id: int, course_id: int, db: Session = Depends(get_db), authorization: str = Header(...)):
     try:
-        quiz = get_quiz_by_id(quiz_id)
-        if quiz:
-            return quiz
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
+        if check_enrollment(user_id=user_id, course_id=course_id):
+            quiz = get_quiz_by_id(quiz_id)
+            if quiz:
+                return quiz
+            else:
+                raise HTTPException(status_code=404, detail="Quiz not found")
         else:
-            raise HTTPException(status_code=404, detail="Quiz not found")
+            raise HTTPException(status_code=404, detail="Unauthorized")
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package courses_topics;
+
+// Request message to check enrollment
+message EnrollmentRequest {
+    string user_id = 1;     // User ID
+    int32 course_id = 2;   // Course ID
+}
+
+// Response message for enrollment check
+message EnrollmentResponse {
+    bool is_enrolled = 1;  // Indicates whether the user is enrolled
+}
+
+// gRPC service definition
+service EnrollmentService {
+    rpc CheckEnrollment (EnrollmentRequest) returns (EnrollmentResponse);
+}
