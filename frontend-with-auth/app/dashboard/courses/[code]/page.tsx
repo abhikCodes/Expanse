@@ -24,6 +24,7 @@ import {
   ModalCloseButton,
   ModalBody,
   ModalFooter,
+  Select,
 } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
 import QuizNavigation from "./QuizNavigation";
@@ -53,7 +54,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
       topic_id: string;
       topic_name: string;
       topic_description: string;
-      content_id: string;
+      content_id: [string];
     }[]
   >([]);
   const [expandedTopic, setExpandedTopic] = useState<{
@@ -68,6 +69,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
   const [isCreateTopicModalOpen, setCreateTopicModalOpen] = useState(false);
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [topicToDelete, setTopicToDelete] = useState<string | null>(null);
+  const [selectedContent, setSelectedContent] = useState<string | null>(null);
 
   const toast = useToast();
   const openCreateTopicModal = () => setCreateTopicModalOpen(true);
@@ -130,19 +132,34 @@ const CourseDetails = ({ params: { code } }: Props) => {
     fetchTopics();
   }, [code]);
 
+  useEffect(() => {
+    if (selectedContent) {
+      fetchTopicContent(selectedContent);
+    }
+  }, [selectedContent]);
+
   // Fetch topic content on expand
   const fetchTopicContent = async (content_id: string) => {
     setLoadingContent(true);
     try {
       const response = await axios.get(API_BASE_URL + "content", {
         params: { content_id: content_id },
-        responseType: "arraybuffer", // Fetch data as binary
+        responseType: "arraybuffer",
       });
-      if (response.status === 200) {
-        const byteArray = new Uint8Array(response.data); // Use response data directly
+
+      const contentType = response.headers["content-type"];
+      const byteArray = new Uint8Array(response.data);
+
+      if (contentType === "application/pdf") {
         const pdfBlob = new Blob([byteArray], { type: "application/pdf" });
         const pdfUrl = URL.createObjectURL(pdfBlob);
         setExpandedTopic({ pdf: pdfUrl });
+      } else if (contentType.startsWith("video/")) {
+        const videoBlob = new Blob([byteArray], { type: contentType });
+        const videoUrl = URL.createObjectURL(videoBlob);
+        setExpandedTopic({ video: videoUrl });
+      } else {
+        console.warn("Unsupported content type:", contentType);
       }
     } catch (error) {
       console.error("Error fetching topic content:", error);
@@ -280,11 +297,14 @@ const CourseDetails = ({ params: { code } }: Props) => {
             {loadingTopics ? (
               <Spinner />
             ) : topics.length > 0 ? (
-              <Accordion allowMultiple>
+              <Accordion allowToggle>
                 {topics.map((topic) => (
                   <AccordionItem key={topic.topic_id}>
                     <AccordionButton
-                      onClick={() => fetchTopicContent(topic.content_id[0])}
+                      onClick={() => {
+                        setExpandedTopic(null);
+                        setSelectedContent(null);
+                      }}
                     >
                       <Box flex="1" textAlign="left">
                         {topic.topic_name}
@@ -292,11 +312,28 @@ const CourseDetails = ({ params: { code } }: Props) => {
                       <AccordionIcon />
                     </AccordionButton>
                     <AccordionPanel pb={4}>
-                      <HStack justify="space-between">
-                        <Text mb={4}>{topic.topic_description}</Text>
+                      <Text mb={4}>{topic.topic_description}</Text>
+                      <HStack mb="5" justify="space-between">
+                        <Select
+                          size="sm"
+                          onChange={(e) => {
+                            setSelectedContent(e.target.value);
+                          }}
+                          value={selectedContent || ""}
+                        >
+                          <option value="" disabled hidden>
+                            Select The Content To Display
+                          </option>
+                          {topic?.content_id?.map((contentId: string, id) => (
+                            <option key={id} value={contentId}>
+                              {`Content ${id + 1}`}
+                            </option>
+                          ))}
+                        </Select>
+
                         {role === "teacher" && (
                           <Button
-                            minWidth="120px"
+                            minWidth="100px"
                             size="sm"
                             colorScheme="red"
                             onClick={() => openDeleteModal(topic.topic_id)}
@@ -323,7 +360,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
                                 <Heading as="h3" size="sm" mb={2}>
                                   Video:
                                 </Heading>
-                                <video controls width="400">
+                                <video controls>
                                   <source
                                     src={expandedTopic.video}
                                     type="video/mp4"
