@@ -1,0 +1,14 @@
+fastapi[all]
+pandas
+numpy
+uvicorn
+sqlalchemy
+SQLAlchemy
+psycopg2-binary
+boto3
+pymongo
+motor
+PyJWT
+grpcio
+grpcio-tools
+protobuf

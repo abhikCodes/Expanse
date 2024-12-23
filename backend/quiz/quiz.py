@@ -3,6 +3,7 @@ from .models import Quiz, Question, Option, QuizXrefUser
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import SQLAlchemyError
 import datetime
+from quiz.grpc_client import EnrollmentClient
 
 # Create a new quiz
 def create_quiz(quiz_data):
@@ -140,3 +141,9 @@ def get_quizzes_for_course(course_id):
         raise e
     finally:
         session.close()
+
+# Checks enrollment of a student with a course
+def check_enrollment(user_id: str, course_id: int):
+    client = EnrollmentClient()
+    is_enrolled = client.check_enrollment(user_id, course_id)
+    return is_enrolled
