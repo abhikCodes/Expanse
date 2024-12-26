@@ -116,7 +116,7 @@ async def create_topic(
             content=success_response(
                 data=jsonable_encoder({
                     "topic_id": db_topic.topic_id,
-                    "content_id": str(gridfs_id),
+                    "content_id": content_ids,
                     **TopicBase.model_validate(db_topic).model_dump()
                 }),
                 message="Topic created successfully"
