@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Float
 from sqlalchemy.orm import relationship
-from ..courses_topics.database import Base
 from sqlalchemy.dialects.postgresql import JSON
+from quiz_service.database import Base
 
 # Quiz Table Model
 class Quiz(Base):
@@ -11,7 +11,7 @@ class Quiz(Base):
     quiz_description = Column(String, nullable=True)
     quiz_content = Column(String, nullable=False)  # Link to MongoDB JSON or a URL
     max_score = Column(Float, nullable=False)
-    course_id = Column(Integer, ForeignKey('courses.course_id'), nullable=False)
+    course_id = Column(Integer, nullable=False)
 
     # Relationships (if needed)
     users = relationship('QuizXrefUser', back_populates='quiz')

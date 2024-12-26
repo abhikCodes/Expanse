@@ -1,0 +1,44 @@
+services:
+  courses_topics:
+    build:
+      context: ./
+      dockerfile: courses_topics/Dockerfile
+    ports:
+      - "8080:8080"   # FastAPI Server
+      - "50051:50051" # gRPC Server
+    environment:
+      - PYTHONPATH=/app
+    volumes:
+      - ./common:/app/common
+      - ./protos:/app/protos
+    container_name: courses_topics
+    restart: always
+
+  quiz_service:
+    build: 
+      context: ./
+      dockerfile: quiz_service/Dockerfile
+    ports:
+      - "8082:8082"   # FastAPI Server
+    environment:
+      - GRPC_SERVER_ADDRESS=courses_topics:50051
+      - PYTHONPATH=/app
+    volumes:
+      - ./common:/app/common
+      - ./protos:/app/protos
+    container_name: quiz_service
+    restart: always
+
+  discussion_forum:
+    build: 
+      context: ./
+      dockerfile: discussion_forum/Dockerfile
+    environment:
+      - PYTHONPATH=/app
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./common:/app/common
+      - ./protos:/app/protos
+    container_name: discussion_forum
+    restart: always

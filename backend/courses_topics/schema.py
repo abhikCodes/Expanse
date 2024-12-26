@@ -57,7 +57,6 @@ class ContentBase(BaseModel):
 
 class UserEnroll(BaseModel):
     course_id: Optional[int] = None
-    user_id: Optional[str] = None
     class Config:
         from_attributes=True
 

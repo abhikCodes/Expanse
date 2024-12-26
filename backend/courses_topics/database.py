@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-URL_DATABASE = 'postgresql://postgres:password@localhost:5432/courseDB'
+URL_DATABASE = 'postgresql://postgres:password@host.docker.internal:5432/courseDB'
 
 engine = create_engine(URL_DATABASE)
 

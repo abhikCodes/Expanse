@@ -1,9 +1,0 @@
-boto3
-fastapi[all]
-numpy
-pandas
-psycopg2-binary
-pydantic
-pymongo
-sqlalchemy
-uvicorn

@@ -13,7 +13,18 @@ message EnrollmentResponse {
     bool is_enrolled = 1;  // Indicates whether the user is enrolled
 }
 
+// Request message to check validity
+message ValidityRequest {
+    int32 course_id = 1;   // Course ID
+}
+
+// Response message for course validity check
+message ValidityResponse {
+    bool is_valid = 1;  // Indicates whether the course is valid
+}
+
 // gRPC service definition
-service EnrollmentService {
+service CourseService {
     rpc CheckEnrollment (EnrollmentRequest) returns (EnrollmentResponse);
+    rpc CheckValidity (ValidityRequest) returns (ValidityResponse);
 }

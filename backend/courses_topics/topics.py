@@ -1,18 +1,18 @@
+import os, sys
+from datetime import datetime
 from typing import Annotated, Optional, List
 from fastapi import APIRouter, Depends, File, UploadFile, Form, Header
 from fastapi.responses import JSONResponse, Response, StreamingResponse
-import models, os, sys
-from database import engine, SessionLocal
-from schema import TopicBase, TopicCreate, TopicResponse, ContentBase
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from pymongo import MongoClient
 from gridfs import GridFS
 from bson import ObjectId
-import boto3
-from fastapi.encoders import jsonable_encoder
-from datetime import datetime
-from backend.common.response_format import success_response, error_response
-from backend.common.token_decoder import token_decoder
+from courses_topics import models
+from courses_topics.database import engine, SessionLocal
+from courses_topics.schema import TopicBase, TopicCreate, TopicResponse, ContentBase
+from common.response_format import success_response, error_response
+from common.token_decoder import token_decoder
 
 router = APIRouter()
 
