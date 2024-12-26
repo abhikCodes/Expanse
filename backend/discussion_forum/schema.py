@@ -9,7 +9,8 @@ class PostBase(BaseModel):
     post_created_by: Optional[int] = None
     course_id: Optional[int] = None
     vote_count: Optional[int] = None
-    votes_by: Optional[str] = None
+    upvotes_by: Optional[str] = None
+    downvotes_by: Optional[str] = None
 
     class Config:
         from_attributes=True
@@ -29,7 +30,8 @@ class CommentBase(BaseModel):
     comment_created_by: Optional[int] = None
     comment_level: Optional[int] = None
     vote_count: Optional[int] = None
-    votes_by: Optional[str] = None
+    upvotes_by: Optional[str] = None
+    downvotes_by: Optional[str] = None
 
 class CommentCreate(CommentBase):
     pass

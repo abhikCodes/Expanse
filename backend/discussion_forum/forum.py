@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from discussion_forum.database import SessionLocal
-from discussion_forum.schema import PostBase, PostCreate, CommentBase, CommentCreate
+from discussion_forum.schema import PostBase, PostCreate
 import discussion_forum.models as forum_models
 from discussion_forum.grpc_client import CourseClient
 from common.response_format import success_response, error_response
@@ -56,14 +56,14 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-        
+
         user_id = decoded_payload.get("sub")
         if not user_id:
             return JSONResponse(
                 status_code=401,
                 content=error_response(message="User ID not found in token")
             )
-        
+
         # gRPC Enrollment checker
         if not check_enrollment(user_id=user_id, course_id=course_id):
             return JSONResponse(
@@ -72,21 +72,20 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
                     message = "User not enrolled in course"
                 )
             )
-            
 
-        result = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).all()
-        if not result:
+        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).all()
+        if not db_forum:
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
-                    message = "No Posts Found"
+                    message = "No Posts Found for the Course"
                 )
             )
 
         return JSONResponse(
             status_code = 200,
             content = success_response(
-                data = dict(PostBase.model_validate(pos).model_dump() for pos in result),
+                data = dict(PostBase.model_validate(pos).model_dump() for pos in db_forum),
                 message = "All posts retrieved successfully"
             )
         )
@@ -120,7 +119,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
                     message = "Course Not Found"
                 )
             )
-        
+
         if not authorization.startswith("Bearer "):
             return JSONResponse(
                 status_code=401,
@@ -128,7 +127,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-        
+
         user_id = decoded_payload.get("sub")
         if not user_id:
             return JSONResponse(
@@ -194,9 +193,9 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
         )
 
 
-"""PUT API: to update a post"""
-@router.put("/course/{course_id}/forum/{post_id}")
-async def update_post(course_id: int, post_id: int, post: PostBase, db: db_dependency):
+"""PUT API: to update OR vote a post"""
+@router.put("/course/{course_id}/forum")
+async def update_post(course_id: int, post_id: int, post: PostBase, db: db_dependency, authorization: str = Header(...), mode: str = None, new_vote: int = None):
     try:
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
@@ -214,6 +213,62 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
                     message = "Post Not Found"
                 )
             )
+
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+
+        if mode == "vote" and new_vote is not None:
+            vote_count = db_forum.vote_count
+
+            # Clicking upvote button will put new_vote as +1
+            if new_vote > 0:
+                if str(user_id) in db_forum.upvotes_by:
+                    db_forum = forum_models.Posts(
+                        vote_count = vote_count - 1,
+                        upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
+                    )
+
+                elif str(user_id) in db_forum.downvotes_by:
+                    db_forum = forum_models.Posts(
+                        vote_count = vote_count + 2,
+                        downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' '),
+                        upvotes_by = db_forum.upvotes_by + ' ' + str(user_id)
+                    )
+
+            # Clicking downvote button will put new_vote as -1
+            elif new_vote < 0:
+                if str(user_id) in db_forum.upvotes_by:
+                    db_forum = forum_models.Posts(
+                        vote_count = vote_count - 2,
+                        upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' '),
+                        downvotes_by = db_forum.downvotes_by + ' ' + str(user_id)
+                    )
+
+                elif str(user_id) in db_forum.downvotes_by:
+                    db_forum = forum_models.Posts(
+                        vote_count = vote_count + 1,
+                        downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' ')
+                    )
+        # else:
+        #     if user_id != db_forum.post_created_by:
+        #         return JSONResponse(
+        #             status_code = 401,
+        #             content = error_response(
+        #                 message = "User ID is not authorized to update the post"
+        #             )
+        #         )
 
         update_data = post.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -262,7 +317,7 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
 
 
 """DELETE API: to delete a post"""
-@router.delete("/course/{course_id}/forum/{post_id}")
+@router.delete("/course/{course_id}/forum")
 async def delete_post(course_id: int, post_id: int, db: db_dependency):
     try:
         if not check_course_validity(course_id=course_id):
@@ -272,7 +327,7 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
                     message = "Course Not Found"
                 )
             )
-        
+
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(
@@ -320,167 +375,5 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
             content = error_response(
                 details = detail_dict,
                 message = "Error deleting post"
-            )
-        )
-
-
-"""PUT API: to vote a post in course forum"""
-@router.put("/course/{course_id}/forum")
-async def vote_post_in_forum(course_id: int, post_id: int, post: PostBase, db: db_dependency):
-    try:
-        if not check_course_validity(course_id=course_id):
-            return JSONResponse(
-                status_code = 404,
-                content = error_response(
-                    message = "Course Not Found"
-                )
-            )
-        
-        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
-        if not db_forum:
-            return JSONResponse(
-                status_code = 404,
-                content = error_response(
-                    message = "Post Not Found"
-                )
-            )
-
-        update_data = post.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_forum, key, value)
-        try:
-            db.commit()
-            db.refresh(db_forum)
-        except Exception as e:
-            db.rollback()
-            detail_dict = {
-                "exception": e
-            }
-            return JSONResponse(
-                status_code = 500,
-                content = error_response(
-                    details = detail_dict,
-                    message = "Error voting post"
-                )
-            )
-
-        return JSONResponse(
-            status_code = 200,
-            content = success_response(
-                data = PostBase.model_validate(db_forum).model_dump(),
-                message = "Post voted successfully"
-            )
-        )
-
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        detail_dict = {
-            "exception": e,
-            "exception_type": exc_type,
-            "file_name": fname,
-            "line_number": exc_tb.tb_lineno
-        }
-        return JSONResponse(
-            status_code = 500,
-            content = error_response(
-                details = detail_dict,
-                message = "Error voting post"
-            )
-        )
-
-
-"""PUT API: to vote a post inside the post page"""
-@router.put("/course/{course_id}/forum/{post_id}")
-async def vote_post_in_post(course_id: int, post_id: int, user_id: int, vote_count: int, new_vote: int, post: PostBase, db: db_dependency):
-    try:
-        if not check_course_validity(course_id=course_id):
-            return JSONResponse(
-                status_code = 404,
-                content = error_response(
-                    message = "Course Not Found"
-                )
-            )
-        
-        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
-        if not db_forum:
-            return JSONResponse(
-                status_code = 404,
-                content = error_response(
-                    message = "Post Not Found"
-                )
-            )
-
-        # Clicking upvote button will put new_vote as +1
-        if new_vote > 0:
-            if str(user_id) in db_forum.upvotes_by:
-                db_comment = forum_models.Comments(
-                    vote_count = vote_count - 1,
-                    upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                )
-
-            elif str(user_id) in db_forum.downvotes_by:
-                db_comment = forum_models.Comments(
-                    vote_count = vote_count + 2,
-                    downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                    upvotes_by = db_forum.upvotes_by + ' ' + str(user_id)
-                )
-
-        # Clicking downvote button will put new_vote as -1
-        elif new_vote < 0:
-            if str(user_id) in db_forum.upvotes_by:
-                db_comment = forum_models.Comments(
-                    vote_count = vote_count - 2,
-                    upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                    downvotes_by = db_forum.downvotes_by + ' ' + str(user_id)
-                )
-
-            elif str(user_id) in db_forum.downvotes_by:
-                db_comment = forum_models.Comments(
-                    vote_count = vote_count + 1,
-                    downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                )
-
-        update_data = post.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(db_forum, key, value)
-        try:
-            db.commit()
-            db.refresh(db_forum)
-        except Exception as e:
-            db.rollback()
-            detail_dict = {
-                "exception": e
-            }
-            return JSONResponse(
-                status_code = 500,
-                content = error_response(
-                    details = detail_dict,
-                    message = "Error voting post"
-                )
-            )
-
-        return JSONResponse(
-            status_code = 200,
-            content = success_response(
-                data = PostBase.model_validate(db_forum).model_dump(),
-                message = "Post voted successfully"
-            )
-        )
-
-    except Exception as e:
-        exc_type, exc_obj, exc_tb = sys.exc_info()
-        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        detail_dict = {
-            "exception": e,
-            "exception_type": exc_type,
-            "file_name": fname,
-            "line_number": exc_tb.tb_lineno
-        }
-        return JSONResponse(
-            status_code = 500,
-            content = error_response(
-                details = detail_dict,
-                message = "Error voting post"
             )
         )
