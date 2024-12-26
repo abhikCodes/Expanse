@@ -40,6 +40,7 @@ def check_course_validity(course_id: int):
 @router.get("/course/{course_id}/forum")
 async def get_posts(course_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
+        # gRPC validity checker
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
@@ -64,8 +65,13 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
             )
         
         # gRPC Enrollment checker
-        if check_enrollment(user_id=user_id, course_id=course_id):
-            print("User Enrolled !!!!!!!!!")
+        if not check_enrollment(user_id=user_id, course_id=course_id):
+            return JSONResponse(
+                status_code = 401,
+                content = error_response(
+                    message = "User not enrolled in course"
+                )
+            )
             
 
         result = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).all()
@@ -128,6 +134,15 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
             return JSONResponse(
                 status_code=401,
                 content=error_response(message="User ID not found in token")
+            )
+        
+        # gRPC Enrollment checker
+        if not check_enrollment(user_id=user_id, course_id=course_id):
+            return JSONResponse(
+                status_code = 401,
+                content = error_response(
+                    message = "User not enrolled in course"
+                )
             )
 
         db_forum = forum_models.Posts(

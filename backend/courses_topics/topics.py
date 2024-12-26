@@ -25,7 +25,7 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-MONGO_URI = "mongodb://localhost:27017"  
+MONGO_URI = "mongodb://host.docker.internal:27017"  
 MONGO_DB_NAME = "expanseDB"
 client = MongoClient(MONGO_URI)
 db_mongo = client[MONGO_DB_NAME]
