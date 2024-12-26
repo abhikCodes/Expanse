@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.sql import func
-from database import Base
+from discussion_forum.database import Base
 
 
 class Posts(Base):
@@ -9,10 +9,10 @@ class Posts(Base):
     post_id = Column(Integer, primary_key=True, index=True)
     post_title = Column(String, nullable=False, index=True)
     post_content = Column(String, nullable=False, index=True)
-    post_created_by = Column(Integer, nullable=False, index=True)
+    post_created_by = Column(String, nullable=False, index=True)
     post_created_timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
-    # post_updated_by = Column(Integer, index=True)
-    post_updated_timestamp = Column(DateTime, default=func.now(), index=True)
+    # post_updated_by = Column(String, index=True)
+    post_updated_timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     vote_count = Column(Integer, index=True)
     upvotes_by = Column(String, index=True)
     downvotes_by = Column(String, index=True)
@@ -30,5 +30,5 @@ class Comments(Base):
     vote_count = Column(Integer, index=True)
     upvotes_by = Column(String, index=True)
     downvotes_by = Column(String, index=True)
-    comment_in_post = Column(Integer, ForeignKey("courses.course_id"))
+    comment_in_post = Column(Integer, nullable=False, index=True)
     comment_level = Column(Integer, nullable=False, index=True)

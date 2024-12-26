@@ -1,17 +1,18 @@
+import os, sys
+from datetime import datetime
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, Request, Header
 from fastapi.responses import JSONResponse, Response
-import models, os, sys
-from database import engine, SessionLocal
-from schema import CourseBase, CourseCreate, CourseResponse, UserEnroll
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from pymongo import MongoClient
 from gridfs import GridFS
 from bson import ObjectId
-from fastapi.encoders import jsonable_encoder
-from datetime import datetime
-from backend.common.response_format import success_response, error_response
-from backend.common.token_decoder import token_decoder
+from courses_topics import models
+from courses_topics.database import engine, SessionLocal
+from courses_topics.schema import CourseBase, CourseCreate, CourseResponse, UserEnroll
+from common.response_format import success_response, error_response
+from common.token_decoder import token_decoder
 
 router = APIRouter()
 
@@ -258,11 +259,26 @@ async def delete_course(course_id: int, db: db_dependency):
 
 """POST API: Enroll a user in a course."""
 @router.post("/enrollUser")
-async def enroll_user(enroll: UserEnroll, db: db_dependency):
+async def enroll_user(enroll: UserEnroll, db: db_dependency, authorization: str = Header(...)):
     try:
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
         db_user_enroll = models.UserXrefCourse(
             course_id=enroll.course_id, 
-            user_id=enroll.user_id
+            user_id=user_id
         )
         try:
             db.add(db_user_enroll)
@@ -301,6 +317,7 @@ async def enroll_user(enroll: UserEnroll, db: db_dependency):
             content=error_response(message="Error enrolling user", details=detail_dict)
         )
     
+
 
 """GET API: Get all the enrolled courses for a student"""
 @router.get("/enrolledCourses")

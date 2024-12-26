@@ -1,15 +1,15 @@
-from typing import Annotated
-from fastapi import APIRouter, Depends
-from fastapi.responses import JSONResponse
-from database import SessionLocal
-from schema import PostBase, PostCreate, CommentBase, CommentCreate
-from sqlalchemy.orm import Session
-from datetime import datetime
-from backend.common.response_format import success_response, error_response
-
 import os, sys
-import models as forum_models
-import backend.courses_topics.models as course_models
+from datetime import datetime
+from typing import Annotated
+from fastapi import APIRouter, Depends, Header
+from fastapi.responses import JSONResponse
+from sqlalchemy.orm import Session
+from discussion_forum.database import SessionLocal
+from discussion_forum.schema import PostBase, PostCreate, CommentBase, CommentCreate
+import discussion_forum.models as forum_models
+from discussion_forum.grpc_client import CourseClient
+from common.response_format import success_response, error_response
+from common.token_decoder import token_decoder
 
 
 router = APIRouter()
@@ -23,23 +23,50 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+# Checks enrollment of a student with a course
+def check_enrollment(user_id: str, course_id: int):
+    client = CourseClient(server_address="courses_topics:50051")
+    is_enrolled = client.check_enrollment(user_id, course_id)
+    return is_enrolled
 
-'''
-POST RELATED ACTIONS
-'''
+# Checks if a course is present
+def check_course_validity(course_id: int):
+    client = CourseClient(server_address="courses_topics:50051")
+    is_valid = client.check_validity(course_id)
+    return is_valid
+
 
 """GET API: to get all the posts in the course forum"""
 @router.get("/course/{course_id}/forum")
-async def get_posts(course_id: int, db: db_dependency):
+async def get_posts(course_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
-        db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
-        if not db_course:
+        if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
                 )
             )
+
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
+        # gRPC Enrollment checker
+        if check_enrollment(user_id=user_id, course_id=course_id):
+            print("User Enrolled !!!!!!!!!")
+            
 
         result = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).all()
         if not result:
@@ -78,21 +105,35 @@ async def get_posts(course_id: int, db: db_dependency):
 
 """POST API: to create a new post in a course forum"""
 @router.post("/course/{course_id}/forum")
-async def create_post(course_id: int, post: PostCreate, db: db_dependency):
+async def create_post(course_id: int, post: PostCreate, db: db_dependency, authorization: str = Header(...)):
     try:
-        db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
-        if not db_course:
+        if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
                 )
             )
+        
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
 
         db_forum = forum_models.Posts(
             post_title = post.post_title,
             post_content = post.post_content,
-            post_created_by = post.post_created_by,
+            post_created_by = user_id,
             course_id = course_id
         )
         try:
@@ -142,8 +183,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency):
 @router.put("/course/{course_id}/forum/{post_id}")
 async def update_post(course_id: int, post_id: int, post: PostBase, db: db_dependency):
     try:
-        db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
-        if not db_course:
+        if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
@@ -210,15 +250,14 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
 @router.delete("/course/{course_id}/forum/{post_id}")
 async def delete_post(course_id: int, post_id: int, db: db_dependency):
     try:
-        db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
-        if not db_course:
+        if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
                 )
             )
-
+        
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(
@@ -274,15 +313,14 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
 @router.put("/course/{course_id}/forum")
 async def vote_post_in_forum(course_id: int, post_id: int, post: PostBase, db: db_dependency):
     try:
-        db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
-        if not db_course:
+        if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
                 )
             )
-
+        
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(
@@ -341,15 +379,14 @@ async def vote_post_in_forum(course_id: int, post_id: int, post: PostBase, db: d
 @router.put("/course/{course_id}/forum/{post_id}")
 async def vote_post_in_post(course_id: int, post_id: int, user_id: int, vote_count: int, new_vote: int, post: PostBase, db: db_dependency):
     try:
-        db_course = db.query(course_models.Courses).filter(course_models.Courses.course_id == course_id).first()
-        if not db_course:
+        if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
                 )
             )
-
+        
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(

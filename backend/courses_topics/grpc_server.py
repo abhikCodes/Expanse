@@ -1,12 +1,12 @@
 import grpc
 from concurrent import futures
-from courses_topics.check_enrollment_pb2 import EnrollmentResponse
-from courses_topics.check_enrollment_pb2_grpc import EnrollmentServiceServicer, add_EnrollmentServiceServicer_to_server
+from courses_topics.check_services_pb2 import EnrollmentResponse, ValidityResponse
+from courses_topics.check_services_pb2_grpc import CourseServiceServicer, add_CourseServiceServicer_to_server
 from courses_topics.database import SessionLocal
 import courses_topics.models as models
 
-class EnrollmentService(EnrollmentServiceServicer):
-    """Implementation of the EnrollmentService gRPC server."""
+class CourseService(CourseServiceServicer):
+    """Implementation of the CourseService gRPC server."""
 
     def CheckEnrollment(self, request, context):
         """
@@ -29,12 +29,28 @@ class EnrollmentService(EnrollmentServiceServicer):
         finally:
             db.close()
 
+    def CheckValidity(self, request, context):
+        """
+        Check whether a course is present in DB or not
+        """
+        course_id = request.course_id
+
+        db = SessionLocal()
+        try:
+            is_valid = db.query(models.Courses).filter(
+                models.Courses.course_id == course_id
+            ).first() is not None
+
+            return ValidityResponse(is_valid=is_valid)
+        finally:
+            db.close()
+
 def serve():
     """Start the gRPC server."""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    add_EnrollmentServiceServicer_to_server(EnrollmentService(), server)
+    add_CourseServiceServicer_to_server(CourseService(), server)
     server.add_insecure_port('[::]:50051')
-    print("gRPC server is running on port 50051...")
+    print("gRPC server is running on port 50051...", flush=True)
     server.start()
     server.wait_for_termination()
 

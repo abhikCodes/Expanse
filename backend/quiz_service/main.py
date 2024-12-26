@@ -1,9 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from courses_topics import models
-from courses_topics.database import engine
-from courses_topics.course import router as course_router
-from courses_topics.topics import router as topic_router
+from quiz_service.api import quiz_bp
 
 app = FastAPI()
 
@@ -20,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-models.Base.metadata.create_all(bind=engine)
+# Register the quiz router
+app.include_router(quiz_bp, prefix="/quiz", tags=["quiz"])
 
-app.include_router(course_router)
-app.include_router(topic_router)
+# You can add more routers for other parts of your application as needed
