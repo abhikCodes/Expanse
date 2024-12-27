@@ -17,6 +17,7 @@ import axios from "axios";
 import { useSession } from "next-auth/react";
 import { API_BASE_URL } from "../constants";
 import { User } from "@prisma/client";
+import { useRouter } from "next/navigation";
 
 interface Course {
   course_id: number;
@@ -25,13 +26,25 @@ interface Course {
 
 const StudentEnrollment = () => {
   const { data: sessionData } = useSession();
+  const router = useRouter();
+  const toast = useToast();
+
+  if (sessionData?.user.role !== "teacher") {
+    toast({
+      title: "Unauthorised Access",
+      status: "warning",
+      position: "top",
+      duration: 1000,
+      isClosable: true,
+    });
+    router.push("/dashboard");
+  }
 
   const [courseData, setCourseData] = useState<Course[] | null>(null);
   const [usersData, setUsersData] = useState<User[] | null>(null);
   const [enrolledUsers, setEnrolledUsers] = useState<string[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
-  const toast = useToast();
 
   // Define colors using the custom theme
   const bg = useColorModeValue("neutral.50", "neutral.50._dark"); // Background

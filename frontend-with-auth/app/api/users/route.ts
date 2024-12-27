@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const providers = await prisma.account.findMany();
 
   const commonUsers = users
-    .filter((user) => providers.some((provider) => provider.userId === user.id))
+    // .filter((user) => providers.some((provider) => provider.userId === user.id))
     .map((user) => {
       const provider = providers.find((p) => p.userId === user.id);
       return {

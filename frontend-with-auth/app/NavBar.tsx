@@ -124,11 +124,7 @@ const NavBar = () => {
               </Menu>
             )}
             {status === "authenticated" && role === "teacher" && (
-              <Tooltip
-                label="Assign Courses to Students"
-                placement="bottom"
-                hasArrow
-              >
+              <Tooltip label="Enroll Students" placement="bottom" hasArrow>
                 <IconButton
                   mr="-2"
                   aria-label="Assign Courses"
