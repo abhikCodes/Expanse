@@ -137,6 +137,7 @@ const Course = ({
               Edit
             </Button>
             <Button
+              textColor="white"
               bg="red.500"
               size="sm"
               onClick={(e) => {

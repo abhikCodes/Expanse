@@ -309,7 +309,8 @@ async def enroll_user(enroll: UserEnroll, db: db_dependency, authorization: str 
         enrolled_user_id_lst = set(db.scalars(select(models.UserXrefCourse.user_id).filter(models.UserXrefCourse.course_id == enroll.course_id)).all())
 
         to_be_deenrolled_user_ids = enrolled_user_id_lst - user_id_lst
-        to_be_deenrolled_user_ids.remove(auth_user_id)
+        if auth_user_id in to_be_deenrolled_user_ids:
+            to_be_deenrolled_user_ids.remove(auth_user_id)
         db.query(models.UserXrefCourse).filter(
             models.UserXrefCourse.user_id.in_(to_be_deenrolled_user_ids), 
             models.UserXrefCourse.course_id == enroll.course_id

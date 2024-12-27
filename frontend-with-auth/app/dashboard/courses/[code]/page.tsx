@@ -88,6 +88,9 @@ const CourseDetails = ({ params: { code } }: Props) => {
       try {
         const response = await axios.get(API_BASE_URL + "course", {
           params: { course_id: code },
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`,
+          },
         });
         const data = response.data;
         if (data.status === "success" && data.data.length > 0) {

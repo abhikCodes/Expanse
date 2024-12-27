@@ -288,7 +288,7 @@ export const notifications = [
   },
 ];
 
-export const API_BASE_URL = "http://localhost:8000/";
+export const API_BASE_URL = "http://localhost:8080/";
 
 export const DUMMY_QUIZZES = {
   student: [
