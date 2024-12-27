@@ -10,7 +10,7 @@ URL_DATABASE = 'postgresql://postgres:password@host.docker.internal:5432/quizdb'
 
 # Create the engine
 try:
-    engine = create_engine(URL_DATABASE)
+    engine = create_engine(URL_DATABASE, echo=True)
 except SQLAlchemyError as e:
     print(f"Error connecting to the database: {e}")
     raise e
@@ -20,6 +20,3 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for ORM models
 Base = declarative_base()
-
-# Create all tables in the database if they do not exist
-Base.metadata.create_all(bind=engine)

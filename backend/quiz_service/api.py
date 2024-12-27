@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Header
-from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Dict, Any
 from pydantic import BaseModel
 from quiz_service.database import SessionLocal
 from quiz_service.quiz import create_quiz, get_quiz_by_id, record_user_submission, get_user_results
@@ -17,56 +16,55 @@ def get_db():
         db.close()
 
 # Pydantic request models for validation
-class OptionSchema(BaseModel):
-    option_id: int
-    option_text: str
-    is_correct: bool
-
-class QuestionSchema(BaseModel):
-    question_id: int
-    question_text: str
-    question_type: str
-    options: List[OptionSchema]
-
 class QuizCreateSchema(BaseModel):
     description: str
-    content: str
+    content: Dict[str, Any]  # JSON field for questions and options
     max_score: float
     course_id: int
-    # questions: List[QuestionSchema]
 
 class SubmissionSchema(BaseModel):
     quiz_id: int
     user_id: int
-    answers: List[dict]
+    answers: List[Dict[str, Any]]  # Answer content should align with the new JSON structure
 
 # Endpoint for creating a new quiz
 @quiz_bp.post("/create-quiz")
 def create_quiz_endpoint(quiz: QuizCreateSchema, db: Session = Depends(get_db)):
+    """
+    Create a new quiz. Stores the JSON content (questions + options) in the quiz_details table.
+    """
     try:
-        new_quiz = create_quiz(quiz.dict())
+        new_quiz = create_quiz(quiz.dict(), db)
         return {"message": "Quiz created successfully", "quiz_id": new_quiz.quiz_id}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 # Endpoint to get quiz by ID
-@quiz_bp.get("/quiz/{quiz_id}/{course_id}")
-def get_quiz_endpoint(quiz_id: int, course_id: int, db: Session = Depends(get_db)):
+@quiz_bp.get("/quiz/{quiz_id}")
+def get_quiz_endpoint(quiz_id: int, db: Session = Depends(get_db)):
+    """
+    Get the quiz details including questions and options stored in JSON.
+    """
     try:
-        quiz = get_quiz_by_id(quiz_id)
+        quiz = get_quiz_by_id(quiz_id, db)
         if quiz:
             return quiz
         else:
             raise HTTPException(status_code=404, detail="Quiz not found")
-        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 # Endpoint for recording user submission
 @quiz_bp.post("/submit-quiz")
 def record_submission(submission: SubmissionSchema, db: Session = Depends(get_db)):
+    """
+    Record a user's submission, including the answers provided and the calculated score.
+    """
     try:
-        recorded_submission = record_user_submission(submission.dict())
-        return {"message": "Submission recorded successfully", "submission_id": recorded_submission.id}
+        recorded_submission = record_user_submission(submission.dict(), db)
+        return {
+            "message": "Submission recorded successfully",
+            "submission_id": recorded_submission.id,
+        }
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

@@ -1,17 +1,18 @@
+from starlette.responses import Content
 import datetime
 from quiz_service.database import SessionLocal
-from quiz_service.models import Quiz, Question, Option, QuizXrefUser
+from quiz_service.models import Quiz, QuizDetail, QuizXrefUser
 from sqlalchemy.orm import joinedload
 from sqlalchemy.exc import SQLAlchemyError
 
 # Create a new quiz
-def create_quiz(quiz_data):
-    session = SessionLocal()
+def create_quiz(quiz_data, db_session):
+    session = db_session or SessionLocal()
     try:
         # Create and save the Quiz object
         new_quiz = Quiz(
             quiz_description=quiz_data['description'],
-            quiz_content=quiz_data['content'],  # Typically a JSON link or content reference
+            quiz_content=quiz_data['content'],
             max_score=quiz_data['max_score'],
             course_id=quiz_data['course_id']
         )
@@ -19,29 +20,16 @@ def create_quiz(quiz_data):
         session.commit()
         session.refresh(new_quiz)
 
-        # Create and save the Question objects
-        for question_data in quiz_data['questions']:
-            question = Question(
-                quiz_id=new_quiz.quiz_id,
-                question_text=question_data['question_text'],
-                question_type=question_data['question_type']
-            )
-            session.add(question)
-            session.commit()
-            session.refresh(question)
-
-            # Create and save the Option objects for each question
-            for option_data in question_data['options']:
-                option = Option(
-                    question_id=question.question_id,
-                    option_text=option_data['option_text'],
-                    is_correct=option_data['is_correct']
-                )
-                session.add(option)
+        new_quiz_details = QuizDetail(
+            quiz_id = new_quiz.quiz_id,
+            content = quiz_data['content']
+        )
+        session.add(new_quiz_details)
         session.commit()
+        session.refresh(new_quiz_details)
 
         return new_quiz
-    
+
     except SQLAlchemyError as e:
         session.rollback()
         print(f"Error occurred: {e}")
@@ -50,11 +38,29 @@ def create_quiz(quiz_data):
         session.close()
 
 # Get a quiz by ID
-def get_quiz_by_id(quiz_id):
-    session = SessionLocal()
+def get_quiz_by_id(quiz_id, db_session=None):
+    session = db_session or SessionLocal()
     try:
-        quiz = session.query(Quiz).options(joinedload(Quiz.questions).joinedload(Question.options)).filter(Quiz.quiz_id == quiz_id).first()
-        return quiz
+        quiz = (
+                session.query(Quiz)
+                .filter(Quiz.quiz_id == quiz_id)
+                .first()
+                )
+        quiz_details = (
+                session.query(QuizDetails)
+                .filter(QuizDetails.quiz_id == quiz_id)
+                .first()
+                )
+
+        if quiz and quiz_details:
+                return {
+                    "quiz_id": quiz.quiz_id,
+                    "description": quiz.quiz_description,
+                    "content": quiz_details.content,  # Return JSON details
+                    "max_score": quiz.max_score,
+                    "course_id": quiz.course_id
+                    }
+        return None
     except SQLAlchemyError as e:
         print(f"Error occurred: {e}")
         raise e
@@ -62,8 +68,8 @@ def get_quiz_by_id(quiz_id):
         session.close()
 
 # Record user's quiz submission
-def record_user_submission(submission_data):
-    session = SessionLocal()
+def record_user_submission(submission_data, db_session=None):
+    session = db_session or SessionLocal()
     try:
         # Create and save the QuizXrefUser object
         new_submission = QuizXrefUser(
@@ -83,16 +89,16 @@ def record_user_submission(submission_data):
         session.close()
 
 # Auto-grade a quiz submission
-def auto_grade_submission(submission_data):
+def auto_grade_submission(submission_data, db_session=None):
     session = SessionLocal()
     try:
-        quiz = session.query(Quiz).options(joinedload(Quiz.questions).joinedload(Question.options)).filter(Quiz.quiz_id == submission_data['quiz_id']).first()
-        if not quiz:
-            raise ValueError("Quiz not found")
+        quiz_details = session.query(QuizDetail).filter(QuizDetails.quiz_id == submission_data['quiz_id']).first()
+        if not quiz_details:
+                raise ValueError("Quiz not found")
 
         total_score = 0
         for answer in submission_data['answers']:
-            question = next((q for q in quiz.questions if q.question_id == answer['question_id']), None)
+            question = next((q for q in quiz_details.content["questions"] if q["question_id"] == answer["question_id"]), None)
             if not question:
                 continue
 

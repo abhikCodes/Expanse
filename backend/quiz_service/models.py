@@ -9,7 +9,7 @@ class Quiz(Base):
 
     quiz_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
     quiz_description = Column(String, nullable=True)
-    quiz_content = Column(String, nullable=False)  # Link to MongoDB JSON or a URL
+    quiz_content = Column(String, nullable=False)
     max_score = Column(Float, nullable=False)
     course_id = Column(Integer, nullable=False)
 
@@ -29,26 +29,12 @@ class QuizXrefUser(Base):
     quiz = relationship('Quiz', back_populates='users')
 
 # Question Model
-class Question(Base):
-    __tablename__ = 'questions'
+class QuizDetail(Base):
+    __tablename__ = 'quiz_details'
 
-    question_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
+    detail_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
     quiz_id = Column(Integer, ForeignKey('quizzes.quiz_id'), nullable=False)
-    question_text = Column(String, nullable=False)
-    question_type = Column(String, nullable=False)  # E.g., 'multiple_choice'
+    content = Column(JSON, nullable=False)  # Store both question and options in JSON format
 
-    # Relationships (if needed)
-    quiz = relationship('Quiz', back_populates='questions')
-    options = relationship('Option', back_populates='question')
-
-# Option Model
-class Option(Base):
-    __tablename__ = 'options'
-
-    option_id = Column(Integer, primary_key=True, autoincrement=True, unique=True)
-    question_id = Column(Integer, ForeignKey('questions.question_id'), nullable=False)
-    option_text = Column(String, nullable=False)
-    is_correct = Column(Integer, nullable=False)  # Use Boolean if possible
-
-    # Relationships (if needed)
-    question = relationship('Question', back_populates='options')
+    # Relationships
+    quiz = relationship('Quiz', back_populates='details')
