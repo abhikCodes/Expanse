@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, Request, Header
 from fastapi.responses import JSONResponse, Response
 from fastapi.encoders import jsonable_encoder
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from pymongo import MongoClient
 from gridfs import GridFS
@@ -25,7 +26,7 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-MONGO_URI = "mongodb://localhost:27017"  
+MONGO_URI = "mongodb://host.docker.internal:27017"  
 MONGO_DB_NAME = "expanseDB"
 client = MongoClient(MONGO_URI)
 db_mongo = client[MONGO_DB_NAME]
@@ -34,12 +35,29 @@ fs = GridFS(db_mongo)
 
 """GET API: to get all the details for a specific course using it's ID"""
 @router.get("/course")
-async def get_course(db: db_dependency, course_id: int = None, mode: str = None):
+async def get_course(db: db_dependency, course_id: int = None, mode: str = None, authorization: str = Header(...)):
     try:
         if mode=='all' and not course_id:
-            result = db.query(models.Courses).all()
+            if not authorization.startswith("Bearer "):
+                return JSONResponse(
+                    status_code=401,
+                    content=error_response(message="Invalid Authorization header format")
+                )
+            token = authorization.split(" ")[1]
+            decoded_payload = token_decoder(token)[1]
+            
+            user_id = decoded_payload.get("sub")
+            if not user_id:
+                return JSONResponse(
+                    status_code=401,
+                    content=error_response(message="User ID not found in token")
+                )
+            course_id_lst = db.scalars(select(models.UserXrefCourse.course_id).filter(models.UserXrefCourse.user_id == user_id)).all()
+            result = db.query(models.Courses).filter(models.Courses.course_id.in_(course_id_lst)).all()
+
         elif mode != 'all' and course_id:
             result = [db.query(models.Courses).filter(models.Courses.course_id == course_id).first()]
+
         else:
             return JSONResponse(
                 status_code=404, 
@@ -105,6 +123,15 @@ async def create_course(course: CourseCreate, db: db_dependency, authorization: 
             db.add(db_course)
             db.commit()
             db.refresh(db_course)
+
+            db_user_xref_course = models.UserXrefCourse(
+                course_id=db_course.course_id,
+                user_id=user_id
+            )
+            db.add(db_user_xref_course)
+            db.commit()
+            db.refresh(db_user_xref_course)
+
         except Exception as e:
             db.rollback()
             detail_dict = {
@@ -268,22 +295,37 @@ async def enroll_user(enroll: UserEnroll, db: db_dependency, authorization: str 
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-        
-        user_id = decoded_payload.get("sub")
-        if not user_id:
+        auth_user_id = decoded_payload.get("sub")
+        if not auth_user_id:
             return JSONResponse(
                 status_code=401,
                 content=error_response(message="User ID not found in token")
             )
         
-        db_user_enroll = models.UserXrefCourse(
-            course_id=enroll.course_id, 
-            user_id=user_id
-        )
+        
+        user_id_lst = enroll.user_id if isinstance(enroll.user_id, list) else [enroll.user_id]
+        user_id_lst = set(user_id_lst)
+
+        enrolled_user_id_lst = set(db.scalars(select(models.UserXrefCourse.user_id).filter(models.UserXrefCourse.course_id == enroll.course_id)).all())
+
+        to_be_deenrolled_user_ids = enrolled_user_id_lst - user_id_lst
+        to_be_deenrolled_user_ids.remove(auth_user_id)
+        db.query(models.UserXrefCourse).filter(
+            models.UserXrefCourse.user_id.in_(to_be_deenrolled_user_ids), 
+            models.UserXrefCourse.course_id == enroll.course_id
+        ).delete()
+
+        common_user_ids = enrolled_user_id_lst.intersection(user_id_lst)
+        user_id_lst = user_id_lst - common_user_ids
+
+        bulk_data = [
+            models.UserXrefCourse(course_id=enroll.course_id, user_id=uid)
+            for uid in user_id_lst
+        ]
+        
         try:
-            db.add(db_user_enroll)
+            db.bulk_save_objects(bulk_data)
             db.commit()
-            db.refresh(db_user_enroll)
         except Exception as e:
             db.rollback()
             detail_dict = {
@@ -293,12 +335,12 @@ async def enroll_user(enroll: UserEnroll, db: db_dependency, authorization: str 
                 status_code=500,
                 content=error_response(message="Error enrolling user", details=str(e))
             )
+        
+        enrolled_users = [{"course_id": enroll.course_id, "user_id": uid} for uid in user_id_lst]
         return JSONResponse(
             status_code=201, 
             content=success_response(
-                data=jsonable_encoder({
-                    **UserEnroll.model_validate(db_user_enroll).model_dump()
-                }), 
+                data=enrolled_users, 
                 message="User enrolled successfully"
             )
         )
@@ -319,22 +361,19 @@ async def enroll_user(enroll: UserEnroll, db: db_dependency, authorization: str 
     
 
 
-"""GET API: Get all the enrolled courses for a student"""
-@router.get("/enrolledCourses")
-async def get_enrolled_courses(user_id: int, db: db_dependency):
+"""GET API: Get all the enrolled students for a course"""
+@router.get("/enrolledUsers")
+async def get_enrolled_users(course_id: int, db: db_dependency):
     try:
-        output = []
-        result = db.query(models.UserXrefCourse).filter(models.UserXrefCourse.user_id == user_id).all()
-        for cor in result:
-            course_id = UserEnroll.model_validate(cor).model_dump()['course_id']
-            course_details = db.query(models.Courses).filter(models.Courses.course_id == course_id).first()
-            output.append(CourseResponse.model_validate(course_details).model_dump())
+        result = db.scalars(select(models.UserXrefCourse.user_id).filter(models.UserXrefCourse.course_id == course_id)).all()
+
+        enrolled_users = {"course_id": course_id, "users": result}
             
         return JSONResponse(
             status_code=200, 
             content=success_response(
-                data=jsonable_encoder(output), 
-                message="User enrolled successfully"
+                data=enrolled_users, 
+                message="Enrolled Users Fetched"
             )
         )
     
@@ -349,5 +388,5 @@ async def get_enrolled_courses(user_id: int, db: db_dependency):
         }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message="Error getting courses", details=detail_dict)
+            content=error_response(message="Error getting users", details=detail_dict)
         )

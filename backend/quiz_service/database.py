@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import SQLAlchemyError
 
 # Database URL
-URL_DATABASE = 'postgresql://postgres:password@host.docker.internal:5432/quizdb'
+URL_DATABASE = 'postgresql://postgres:password@host.docker.internal:5432/quizDB'
 
 # Create the engine
 try:
