@@ -27,6 +27,7 @@ services:
     volumes:
       - ./common:/app/common
       - ./protos:/app/protos
+      - ./quiz_service:/app/quiz_service
     container_name: quiz_service
     restart: always
 
@@ -41,5 +42,6 @@ services:
     volumes:
       - ./common:/app/common
       - ./protos:/app/protos
+      - ./discussion_forum:/app/discussion_forum
     container_name: discussion_forum
     restart: always
