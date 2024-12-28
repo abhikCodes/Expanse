@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import Courses from "@/app/dashboard/courses/Courses";
 import { Grid, GridItem } from "@chakra-ui/react";
 import BasicDetails from "./profile/BasicDetails";
+import QuickLinks from "./QuickLinks";
 
 const Dashboard = () => {
   const { data: session, status } = useSession();
@@ -23,6 +24,7 @@ const Dashboard = () => {
         display={{ base: "none", md: "block" }}
       >
         <BasicDetails />
+        <QuickLinks />
       </GridItem>
     </Grid>
   );
