@@ -2,11 +2,13 @@ import React from "react";
 import { Box, VStack, Heading, Link } from "@chakra-ui/react";
 import { useColorMode } from "@chakra-ui/react";
 import NextLink from "next/link";
+import { useSession } from "next-auth/react";
 
 const QuickLinks = () => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
-
+  const { data: sessionData } = useSession();
+  const role = sessionData?.user.role;
   return (
     <Box
       flex={1}
@@ -54,15 +56,17 @@ const QuickLinks = () => {
           >
             Profile Details
           </Link>
-          <Link
-            as={NextLink}
-            href="/enrollment"
-            color="teal.500"
-            fontWeight="bold"
-            fontSize="lg"
-          >
-            Enroll Students
-          </Link>
+          {role === "teacher" && (
+            <Link
+              as={NextLink}
+              href="/enrollment"
+              color="teal.500"
+              fontWeight="bold"
+              fontSize="lg"
+            >
+              Enroll Students
+            </Link>
+          )}
         </VStack>
       </VStack>
     </Box>
