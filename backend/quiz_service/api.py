@@ -38,14 +38,34 @@ def check_course_validity(course_id: int):
     is_valid = client.check_validity(course_id)
     return is_valid
 
+def get_course_name(course_id:int):
+    client = CourseClient(server_address="courses_topics:50051")
+    course_name = client.get_course_name(course_id)
+    return course_name
+
 
 # Endpoint for creating a new quiz
 @router.post("/create-quiz")
-def create_quiz(quiz: QuizCreateSchema, db: db_dependency):
+def create_quiz(quiz: QuizCreateSchema, db: db_dependency, authorization: str = Header(...)):
     """
     Create a new quiz. Stores the JSON content (questions + options) in the quiz_details table.
     """
     try:
+        # Authorization token checker and userid extraction 
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
         quiz_data = jsonable_encoder(quiz)
 
         # Check if course is valid or not
@@ -62,7 +82,8 @@ def create_quiz(quiz: QuizCreateSchema, db: db_dependency):
             quiz_description=quiz_data['quiz_description'],
             quiz_content=quiz_data['quiz_content'],
             max_score=quiz_data['max_score'],
-            course_id=quiz_data['course_id']
+            course_id=quiz_data['course_id'],
+            quiz_created_by=user_id
         )
         try:
             db.add(new_quiz)
@@ -314,6 +335,9 @@ def record_submission(submission: SubmissionSchema, db: db_dependency, authoriza
 
 @router.get("/get-score")
 def get_scores(db: db_dependency, authorization: str = Header(...)):
+    """
+        get scores and quiz attempt details of a user.
+    """
     try:
         # Authorization token checker and userid extraction 
         if not authorization.startswith("Bearer "):
@@ -330,9 +354,49 @@ def get_scores(db: db_dependency, authorization: str = Header(...)):
                 content=error_response(message="User ID not found in token")
             )
         
-        # quiz_lst = db.scalars(select(QuizXrefUser.user_id).filter(QuizXrefUser.course_id == course_id)).all()
-        # resp = []
-        # for quiz in quiz_lst:
+        results = db.query(
+            Quiz.course_id,
+            QuizXrefUser.quiz_id,
+            Quiz.quiz_description,
+            Quiz.max_score,
+            QuizXrefUser.score,
+            QuizXrefUser.date_attempted
+        ).join(Quiz, Quiz.quiz_id == QuizXrefUser.quiz_id).filter(QuizXrefUser.user_id==user_id).order_by(QuizXrefUser.date_attempted.desc()).all()
+
+        course_map = {}
+        for res in results:
+            course_id = res.course_id
+            if not check_course_validity(course_id=course_id):
+                return JSONResponse(
+                    status_code = 404,
+                    content = error_response(
+                        message = "Course Not Found"
+                    )
+                )
+            course_name = get_course_name(course_id=course_id)
+            if course_id not in course_map:
+                course_map[course_id] = {
+                    'course_id': course_id,
+                    'course_name': course_name,
+                    'quiz_details': []
+                }
+            course_map[course_id]['quiz_details'].append({
+                'quiz_id': res.quiz_id,
+                'quiz_description': res.quiz_description,
+                'max_score': res.max_score,
+                'score_obtained': res.score,
+                'date_attempted': res.date_attempted.isoformat()
+            })
+
+        response = list(course_map.values())
+
+        return JSONResponse(
+            status_code=200,
+            content=success_response(
+                data=response, 
+                message="Quiz retrieved successfully"
+            )
+        )
 
         
     except Exception as e:

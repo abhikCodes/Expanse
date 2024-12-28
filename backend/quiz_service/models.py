@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
 from quiz_service.database import Base
@@ -13,6 +14,8 @@ class Quiz(Base):
     quiz_content = Column(JSON, nullable=False)
     max_score = Column(Float, nullable=False)
     course_id = Column(Integer, nullable=False)
+    quiz_created_by = Column(String, nullable=False, index=True)
+    quiz_created_timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
 
     # Relationships (if needed)
     users = relationship('QuizXrefUser', back_populates='quiz')
@@ -26,6 +29,7 @@ class QuizXrefUser(Base):
     quiz_id = Column(Integer, ForeignKey('quizzes.quiz_id'), nullable=False)
     user_id = Column(String, nullable=False)
     score = Column(Float, nullable=False)
+    date_attempted = Column(DateTime, default=func.now(), nullable=False, index=True)
 
     # Relationships (if needed)
     quiz = relationship('Quiz', back_populates='users')

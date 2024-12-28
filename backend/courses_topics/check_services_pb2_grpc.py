@@ -45,6 +45,11 @@ class CourseServiceStub(object):
                 request_serializer=check__services__pb2.ValidityRequest.SerializeToString,
                 response_deserializer=check__services__pb2.ValidityResponse.FromString,
                 _registered_method=True)
+        self.CourseName = channel.unary_unary(
+                '/courses_topics.CourseService/CourseName',
+                request_serializer=check__services__pb2.CourseNameRequest.SerializeToString,
+                response_deserializer=check__services__pb2.CourseNameResponse.FromString,
+                _registered_method=True)
 
 
 class CourseServiceServicer(object):
@@ -63,6 +68,12 @@ class CourseServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CourseName(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_CourseServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -75,6 +86,11 @@ def add_CourseServiceServicer_to_server(servicer, server):
                     servicer.CheckValidity,
                     request_deserializer=check__services__pb2.ValidityRequest.FromString,
                     response_serializer=check__services__pb2.ValidityResponse.SerializeToString,
+            ),
+            'CourseName': grpc.unary_unary_rpc_method_handler(
+                    servicer.CourseName,
+                    request_deserializer=check__services__pb2.CourseNameRequest.FromString,
+                    response_serializer=check__services__pb2.CourseNameResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -132,6 +148,33 @@ class CourseService(object):
             '/courses_topics.CourseService/CheckValidity',
             check__services__pb2.ValidityRequest.SerializeToString,
             check__services__pb2.ValidityResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CourseName(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/courses_topics.CourseService/CourseName',
+            check__services__pb2.CourseNameRequest.SerializeToString,
+            check__services__pb2.CourseNameResponse.FromString,
             options,
             channel_credentials,
             insecure,

@@ -23,8 +23,17 @@ message ValidityResponse {
     bool is_valid = 1;  // Indicates whether the course is valid
 }
 
+message CourseNameRequest {
+    int32 course_id = 1;
+}
+
+message CourseNameResponse {
+    string course_name = 1;
+}
+
 // gRPC service definition
 service CourseService {
     rpc CheckEnrollment (EnrollmentRequest) returns (EnrollmentResponse);
     rpc CheckValidity (ValidityRequest) returns (ValidityResponse);
+    rpc CourseName (CourseNameRequest) returns (CourseNameResponse);
 }

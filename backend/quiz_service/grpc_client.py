@@ -1,5 +1,5 @@
 import grpc
-from quiz_service.check_services_pb2 import EnrollmentRequest, ValidityRequest
+from quiz_service.check_services_pb2 import EnrollmentRequest, ValidityRequest, CourseNameRequest
 from quiz_service.check_services_pb2_grpc import CourseServiceStub
 
 class CourseClient:
@@ -15,10 +15,10 @@ class CourseClient:
 
     def check_enrollment(self, user_id: str, course_id: int) -> bool:
         """
-        Check if a user is enrolled in a course.
-        :param user_id: The user ID to check.
-        :param course_id: The course ID to check.
-        :return: True if the user is enrolled, False otherwise.
+            Check if a user is enrolled in a course.
+            :param user_id: The user ID to check.
+            :param course_id: The course ID to check.
+            :return: True if the user is enrolled, False otherwise.
         """
         try:
             request = EnrollmentRequest(user_id=user_id, course_id=course_id)
@@ -30,14 +30,29 @@ class CourseClient:
 
     def check_validity(self, course_id: int) -> bool:
         """
-        Check if a course is valid.
-        :param course_id: The course ID to check.
-        :return: True if the course is valid, False otherwise.
+            Check if a course is valid.
+            :param course_id: The course ID to check.
+            :return: True if the course is valid, False otherwise.
         """
         try:
             request = ValidityRequest(course_id=course_id)
             response = self.stub.CheckValidity(request)
             return response.is_valid
+        except grpc.RpcError as e:
+            print(f"gRPC Error: {e.code()} - {e.details()}")
+            return False
+        
+    
+    def get_course_name(self, course_id: int) -> bool:
+        """
+            Get Course Name.
+            :param course_id: The course ID to check.
+            :return: course_name
+        """
+        try:
+            request = CourseNameRequest(course_id=course_id)
+            response = self.stub.CourseName(request)
+            return response.course_name
         except grpc.RpcError as e:
             print(f"gRPC Error: {e.code()} - {e.details()}")
             return False

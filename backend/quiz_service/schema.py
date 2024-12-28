@@ -14,6 +14,18 @@ class QuizCreateSchema(BaseModel):
     max_score: Optional[float] = None
     course_id: Optional[int] = None
 
+class QuizResponse(BaseModel):
+    quiz_id: Optional[int] = None
+    quiz_description: Optional[str] = None
+    score: Optional[float] = None
+
+
+class UserQuizReponse(BaseModel):
+    course_id: Optional[int] = None
+    course_name: Optional[str] = None
+    quiz_details: List[QuizResponse]
+
+
 class Answers(BaseModel):
     ques_no: Optional[int] = None
     answer: Optional[str] = None
