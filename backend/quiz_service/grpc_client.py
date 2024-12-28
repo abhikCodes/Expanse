@@ -1,6 +1,6 @@
 import grpc
-from courses_topics.check_services_pb2 import EnrollmentRequest, ValidityRequest
-from courses_topics.check_services_pb2_grpc import CourseServiceStub
+from quiz_service.check_services_pb2 import EnrollmentRequest, ValidityRequest
+from quiz_service.check_services_pb2_grpc import CourseServiceStub
 
 class CourseClient:
     """gRPC client for the CourseService to check user enrollment and course validity."""
