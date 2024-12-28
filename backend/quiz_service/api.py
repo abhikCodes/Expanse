@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends, Header
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from typing import Annotated
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 from quiz_service.database import SessionLocal
 from quiz_service.schema import QuizCreateSchema, SubmissionSchema
@@ -100,7 +101,6 @@ def create_quiz(quiz: QuizCreateSchema, db: db_dependency):
         )
 
 
-
 # Endpoint to get quiz by ID
 @router.get("/get-quiz/{quiz_id}")
 def get_quiz(quiz_id: int, db: db_dependency):
@@ -149,6 +149,7 @@ def get_quiz(quiz_id: int, db: db_dependency):
             status_code=500, 
             content=error_response(message=f"Error in getting quiz", details=detail_dict)
         )
+
 
 # Endpoint to get all quizzes by course ID
 @router.get("/get-quiz-course/{course_id}")
@@ -214,7 +215,6 @@ def get_quiz_by_course(course_id: int, db: db_dependency):
         )
 
 
-
 # Endpoint for recording user submission
 @router.post("/submit-quiz")
 def record_submission(submission: SubmissionSchema, db: db_dependency, authorization: str = Header(...)):
@@ -260,10 +260,7 @@ def record_submission(submission: SubmissionSchema, db: db_dependency, authoriza
         content_map = {c_obj['ques_no']: c_obj for c_obj in quiz.quiz_content}
         max_score = quiz.max_score
         ind_score = max_score / len(quiz.quiz_content)
-        score = sum(
-            ind_score for obj in submission.answers
-            if content_map.get(obj['ques_no'], {}).get('answer') == obj['answer']
-        )
+        score = sum(ind_score for obj in submission_data['answers'] if content_map.get(obj['ques_no'], {}).get('answer') == obj['answer'])
 
         # db insert
         new_submission = QuizXrefUser(
@@ -300,6 +297,44 @@ def record_submission(submission: SubmissionSchema, db: db_dependency, authoriza
                 message="Submission recorded successfully"
             )
         )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        detail_dict = {
+            "exception": e,
+            "exception_type": exc_type,
+            "file_name": fname,
+            "line_number": exc_tb.tb_lineno
+        }
+        return JSONResponse(
+            status_code=500, 
+            content=error_response(message=f"Error in submitting quiz", details=detail_dict)
+        )
+
+
+@router.get("/get-score")
+def get_scores(db: db_dependency, authorization: str = Header(...)):
+    try:
+        # Authorization token checker and userid extraction 
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
+        # quiz_lst = db.scalars(select(QuizXrefUser.user_id).filter(QuizXrefUser.course_id == course_id)).all()
+        # resp = []
+        # for quiz in quiz_lst:
+
+        
     except Exception as e:
         exc_type, exc_obj, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
