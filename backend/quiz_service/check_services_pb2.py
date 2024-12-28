@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14\x63heck_services.proto\x12\x0e\x63ourses_topics\"7\n\x11\x45nrollmentRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\")\n\x12\x45nrollmentResponse\x12\x13\n\x0bis_enrolled\x18\x01 \x01(\x08\"$\n\x0fValidityRequest\x12\x11\n\tcourse_id\x18\x01 \x01(\x05\"$\n\x10ValidityResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\x32\xbd\x01\n\rCourseService\x12X\n\x0f\x43heckEnrollment\x12!.courses_topics.EnrollmentRequest\x1a\".courses_topics.EnrollmentResponse\x12R\n\rCheckValidity\x12\x1f.courses_topics.ValidityRequest\x1a .courses_topics.ValidityResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14\x63heck_services.proto\x12\x0e\x63ourses_topics\"7\n\x11\x45nrollmentRequest\x12\x0f\n\x07user_id\x18\x01 \x01(\t\x12\x11\n\tcourse_id\x18\x02 \x01(\x05\")\n\x12\x45nrollmentResponse\x12\x13\n\x0bis_enrolled\x18\x01 \x01(\x08\"$\n\x0fValidityRequest\x12\x11\n\tcourse_id\x18\x01 \x01(\x05\"$\n\x10ValidityResponse\x12\x10\n\x08is_valid\x18\x01 \x01(\x08\"&\n\x11\x43ourseNameRequest\x12\x11\n\tcourse_id\x18\x01 \x01(\x05\")\n\x12\x43ourseNameResponse\x12\x13\n\x0b\x63ourse_name\x18\x01 \x01(\t2\x92\x02\n\rCourseService\x12X\n\x0f\x43heckEnrollment\x12!.courses_topics.EnrollmentRequest\x1a\".courses_topics.EnrollmentResponse\x12R\n\rCheckValidity\x12\x1f.courses_topics.ValidityRequest\x1a .courses_topics.ValidityResponse\x12S\n\nCourseName\x12!.courses_topics.CourseNameRequest\x1a\".courses_topics.CourseNameResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -39,6 +39,10 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_VALIDITYREQUEST']._serialized_end=176
   _globals['_VALIDITYRESPONSE']._serialized_start=178
   _globals['_VALIDITYRESPONSE']._serialized_end=214
-  _globals['_COURSESERVICE']._serialized_start=217
-  _globals['_COURSESERVICE']._serialized_end=406
+  _globals['_COURSENAMEREQUEST']._serialized_start=216
+  _globals['_COURSENAMEREQUEST']._serialized_end=254
+  _globals['_COURSENAMERESPONSE']._serialized_start=256
+  _globals['_COURSENAMERESPONSE']._serialized_end=297
+  _globals['_COURSESERVICE']._serialized_start=300
+  _globals['_COURSESERVICE']._serialized_end=574
 # @@protoc_insertion_point(module_scope)
