@@ -149,7 +149,9 @@ const StudentEnrollment = () => {
 
   return (
     <Box p={10} bg={bg} color={cardTextColor} minH="100vh">
-      <Heading mb={5}>Student Enrollment</Heading>
+      <Heading variant="h2" mb={5}>
+        Student Enrollment
+      </Heading>
 
       {/* Course Selection */}
       <Select
