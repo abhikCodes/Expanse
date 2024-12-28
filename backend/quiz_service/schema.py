@@ -21,14 +21,3 @@ class Answers(BaseModel):
 class SubmissionSchema(BaseModel):
     quiz_id: Optional[int] = None
     answers: List[Answers]
-
-# class QuizCreateSchema(BaseModel):
-#     description: str
-#     content: Dict[str, Any]  # JSON field for questions and options
-#     max_score: float
-#     course_id: int
-
-# class SubmissionSchema(BaseModel):
-#     quiz_id: int
-#     user_id: int
-#     answers: List[Dict[str, Any]]  # Answer content should align with the new JSON structure
