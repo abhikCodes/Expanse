@@ -38,6 +38,8 @@ def check_course_validity(course_id: int):
     is_valid = client.check_validity(course_id)
     return is_valid
 
+
+# Gets the course name for the given course_id
 def get_course_name(course_id:int):
     client = CourseClient(server_address="courses_topics:50051")
     course_name = client.get_course_name(course_id)
@@ -394,7 +396,7 @@ def get_scores(db: db_dependency, authorization: str = Header(...)):
             status_code=200,
             content=success_response(
                 data=response, 
-                message="Quiz retrieved successfully"
+                message="Quiz Score retrieved successfully"
             )
         )
 
@@ -410,5 +412,5 @@ def get_scores(db: db_dependency, authorization: str = Header(...)):
         }
         return JSONResponse(
             status_code=500, 
-            content=error_response(message=f"Error in submitting quiz", details=detail_dict)
+            content=error_response(message=f"Error in retrieving score of quiz", details=detail_dict)
         )
