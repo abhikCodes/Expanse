@@ -28,6 +28,7 @@ class CourseClient:
             print(f"gRPC Error: {e.code()} - {e.details()}")
             return False
 
+
     def check_validity(self, course_id: int) -> bool:
         """
             Check if a course is valid.
