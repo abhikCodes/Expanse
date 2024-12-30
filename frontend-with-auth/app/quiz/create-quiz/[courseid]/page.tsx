@@ -27,7 +27,7 @@ import { useSession } from "next-auth/react";
 const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
   const [quizDescription, setQuizDescription] = useState<string>("");
   const { data: sessionData } = useSession();
-  const [maxScore, setMaxScore] = useState<number>(50);
+  const maxScore = 100;
   const [questions, setQuestions] = useState([
     { question: "", options: { A: "", B: "", C: "" }, answer: "" },
   ]);
@@ -120,7 +120,7 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
             placeholder="Enter a description for the quiz"
           />
         </FormControl>
-
+        {/* 
         <FormControl isRequired>
           <FormLabel>Maximum Score</FormLabel>
           <Input
@@ -130,7 +130,7 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
             min={1}
             placeholder="Enter maximum score"
           />
-        </FormControl>
+        </FormControl> */}
 
         <VStack align="start" spacing={8} w="100%">
           {questions.map((question, index) => (
