@@ -22,15 +22,16 @@ import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { API_QUIZ_BASE_URL } from "../../../constants";
+import { useSession } from "next-auth/react";
 
 const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
   const [quizDescription, setQuizDescription] = useState<string>("");
+  const { data: sessionData } = useSession();
   const [maxScore, setMaxScore] = useState<number>(50);
   const [questions, setQuestions] = useState([
     { question: "", options: { A: "", B: "", C: "" }, answer: "" },
   ]);
   const bg = useColorModeValue("neutral.50", "neutral.50._dark");
-
   const toast = useToast();
   const router = useRouter();
   const courseId = params.courseid;
@@ -77,7 +78,10 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
       };
 
       await axios.post(`${API_QUIZ_BASE_URL}create-quiz`, payload, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData?.idToken}`,
+        },
       });
 
       toast({
