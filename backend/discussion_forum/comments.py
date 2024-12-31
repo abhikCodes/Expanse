@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from discussion_forum.database import SessionLocal
 from discussion_forum.schema import PostBase, CommentBase, CommentCreate
 import discussion_forum.models as forum_models
@@ -88,7 +89,7 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
                 )
             )
 
-        result = db.query(forum_models.Comments).filter(forum_models.Comments.comment_in_post == post_id).all()
+        result = db.query(forum_models.Comments).filter(forum_models.Comments.comment_in_post == post_id).order_by(desc(forum_models.Comments.comment_updated_timestamp)).all()
         if not result:
             return JSONResponse(
                 status_code = 404,
