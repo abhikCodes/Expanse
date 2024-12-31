@@ -23,7 +23,7 @@ class Comments(Base):
 
     comment_id = Column(Integer, primary_key=True, index=True)
     comment_content = Column(String, nullable=False, index=True)
-    comment_created_by = Column(String, nullable=False, index=True)
+    comment_created_by = Column(Integer, nullable=False, index=True)
     comment_created_timestamp = Column(DateTime, default=func.now(), nullable=False, index=True)
     # comment_updated_by = Column(Integer, index=True)
     comment_updated_timestamp = Column(DateTime, default=func.now(), index=True)
@@ -31,4 +31,4 @@ class Comments(Base):
     upvotes_by = Column(String, index=True)
     downvotes_by = Column(String, index=True)
     comment_in_post = Column(Integer, nullable=False, index=True)
-    reply_to = Column(String, nullable=False, index=True)
+    comment_level = Column(Integer, nullable=False, index=True)
