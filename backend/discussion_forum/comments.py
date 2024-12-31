@@ -94,7 +94,7 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
-                    message = "Post Not Found"
+                    message = "Comments Not Found"
                 )
             )
 
@@ -102,7 +102,7 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             status_code = 200,
             content = success_response(
                 data = jsonable_encoder({
-                    "PostData": [PostBase.model_validate(db_forum).model_dump()],
+                    "PostData": db_forum,
                     "CommentData": result
                 }),
                 message = "Comments retrieved successfully" if result else "No Comments Found for the Post"
