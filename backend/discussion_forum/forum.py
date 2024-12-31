@@ -75,7 +75,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
                 )
             )
 
-        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).order_by(desc(forum_models.Posts.post_updated_timestamp)).all()
+        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).order_by(forum_models.Posts.post_updated_timestamp).all()
         if not db_forum:
             return JSONResponse(
                 status_code = 404,
