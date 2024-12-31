@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated
 from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from discussion_forum.database import SessionLocal
 from discussion_forum.schema import PostBase, PostCreate
@@ -37,7 +38,7 @@ def check_course_validity(course_id: int):
 
 
 """GET API: to get all the posts in the course forum"""
-@router.get("/course/{course_id}/forum")
+@router.get("/courses/{course_id}/discussions")
 async def get_posts(course_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
         # gRPC validity checker
@@ -85,7 +86,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
         return JSONResponse(
             status_code = 200,
             content = success_response(
-                data = dict(PostBase.model_validate(pos).model_dump() for pos in db_forum),
+                data = jsonable_encoder([PostBase.model_validate(pos).model_dump() for pos in db_forum]),
                 message = "All posts retrieved successfully"
             )
         )
@@ -109,7 +110,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
 
 
 """POST API: to create a new post in a course forum"""
-@router.post("/course/{course_id}/forum")
+@router.post("/courses/{course_id}/discussions")
 async def create_post(course_id: int, post: PostCreate, db: db_dependency, authorization: str = Header(...)):
     try:
         if not check_course_validity(course_id=course_id):
@@ -194,7 +195,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
 
 
 """PUT API: to update OR vote a post"""
-@router.put("/course/{course_id}/forum")
+@router.put("/courses/{course_id}/discussions")
 async def update_post(course_id: int, post_id: int, post: PostBase, db: db_dependency, authorization: str = Header(...), mode: str = None, new_vote: int = None):
     try:
         if not check_course_validity(course_id=course_id):
@@ -317,7 +318,7 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
 
 
 """DELETE API: to delete a post"""
-@router.delete("/course/{course_id}/forum")
+@router.delete("/courses/{course_id}/discussions")
 async def delete_post(course_id: int, post_id: int, db: db_dependency):
     try:
         if not check_course_validity(course_id=course_id):

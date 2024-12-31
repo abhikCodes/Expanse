@@ -3,9 +3,10 @@ from datetime import datetime
 from typing import Annotated
 from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
 from discussion_forum.database import SessionLocal
-from discussion_forum.schema import CommentBase, CommentCreate
+from discussion_forum.schema import PostBase, CommentBase, CommentCreate
 import discussion_forum.models as forum_models
 from discussion_forum.grpc_client import CourseClient
 from common.response_format import success_response, error_response
@@ -38,7 +39,7 @@ def check_course_validity(course_id: int):
 
 
 """GET API: to get all the comments for a specific post"""
-@router.get("/course/{course_id}/forum/{post_id}")
+@router.get("/courses/{course_id}/discussions/{post_id}")
 async def get_comments(course_id: int, post_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
         # gRPC validity checker
@@ -88,20 +89,22 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             )
 
         result = db.query(forum_models.Comments).filter(forum_models.Comments.comment_in_post == post_id).all()
-        if not result:
-            return JSONResponse(
-                status_code = 200,
-                content = success_response(
-                    data = dict(CommentBase.model_validate(com).model_dump() for com in result),
-                    message = "No Comments Found"
-                )
-            )
+        # if not result:
+        #     return JSONResponse(
+        #         status_code = 404,
+        #         content = error_response(
+        #             message = "No Comments Found for the Post"
+        #         )
+        #     )
 
         return JSONResponse(
             status_code = 200,
             content = success_response(
-                data = dict(CommentBase.model_validate(com).model_dump() for com in result),
-                message = "Comments retrieved successfully"
+                data = jsonable_encoder({
+                    "PostData": [PostBase.model_validate(db_forum).model_dump()],
+                    "CommentData": [CommentBase.model_validate(com).model_dump() for com in result] if result else []
+                }),
+                message = "Comments retrieved successfully" if result else "No Comments Found for the Post"
             )
         )
 
@@ -124,8 +127,8 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
 
 
 """POST API: to create a new comment in a post"""
-@router.post("/course/{course_id}/forum/{post_id}")
-async def create_comment(course_id: int, post_id: int, current_comment_level: int, comm: CommentCreate, db: db_dependency, authorization: str = Header(...)):
+@router.post("/courses/{course_id}/discussions/{post_id}")
+async def create_comment(course_id: int, post_id: int, reply_to: str, comm: CommentCreate, db: db_dependency, authorization: str = Header(...)):
     try:
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
@@ -159,14 +162,14 @@ async def create_comment(course_id: int, post_id: int, current_comment_level: in
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
-                    message = "Post Not Found"
+                    message = "Comment Not Found"
                 )
             )
 
         db_comment = forum_models.Comments(
             comment_content = comm.comment_content,
             comment_created_by = user_id,
-            comment_level = current_comment_level + 1
+            reply_to = reply_to
         )
         try:
             db.add(db_comment)
@@ -212,7 +215,7 @@ async def create_comment(course_id: int, post_id: int, current_comment_level: in
 
 
 """PUT API: to update OR vote a comment in a post"""
-@router.put("/course/{course_id}/forum/{post_id}")
+@router.put("/courses/{course_id}/discussions/{post_id}")
 async def update_comment(course_id: int, post_id: int, comment_id: int, comm: CommentCreate, db: db_dependency, authorization: str = Header(...), mode: str = None, new_vote: int = None):
     try:
         if not check_course_validity(course_id=course_id):
@@ -228,7 +231,7 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
-                    message = "Post Not Found"
+                    message = "Comment Not Found"
                 )
             )
 
@@ -350,7 +353,7 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
 
 
 """DELETE API: to delete a comment in a post"""
-@router.delete("/course/{course_id}/forum/{post_id}")
+@router.delete("/courses/{course_id}/discussions/{post_id}")
 async def delete_comment(course_id: int, post_id: int, comment_id: int, db: db_dependency):
     try:
         if not check_course_validity(course_id=course_id):
@@ -366,7 +369,7 @@ async def delete_comment(course_id: int, post_id: int, comment_id: int, db: db_d
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
-                    message = "Post Not Found"
+                    message = "Comment Not Found"
                 )
             )
 

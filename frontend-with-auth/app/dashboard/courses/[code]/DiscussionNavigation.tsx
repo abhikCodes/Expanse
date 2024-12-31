@@ -23,7 +23,7 @@ const DiscussionNavigation = ({ code }: { code: string }) => {
         >
           Discussions
         </Heading>
-        <Button onClick={() => router.push(`/discussions/${code}/${1}`)}>
+        <Button onClick={() => router.push(`/discussions/${code}`)}>
           Go to Discussions
         </Button>
       </Box>
