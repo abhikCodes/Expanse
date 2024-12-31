@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from discussion_forum.database import SessionLocal
 from discussion_forum.schema import PostBase, PostCreate
 import discussion_forum.models as forum_models
@@ -74,7 +75,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
                 )
             )
 
-        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).all()
+        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).order_by(desc(forum_models.Posts.post_updated_timestamp)).all()
         if not db_forum:
             return JSONResponse(
                 status_code = 404,
