@@ -20,11 +20,12 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import Post from "./Post";
-import {useRouter} from "next/navigation";
-import {useSession} from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import axios from "axios";
-import {API_DISCUSSION_BASE_URL} from "@/app/constants";
-import {FiPlusCircle} from "react-icons/fi";
+import { API_DISCUSSION_BASE_URL } from "@/app/constants";
+import { ChevronLeftIcon } from "@chakra-ui/icons";
+import { jwtDecode } from "jwt-decode";
 
 interface Props {
   params: { courseId: string };
@@ -48,29 +49,30 @@ interface PostResponse {
   };
 }
 
-const Posts= ({ params: { courseId } }: Props) => {
-  if (!courseId) return <div>Loading...</div>;
-
-  const { data: sessionData } = useSession();
+const Posts = ({ params: { courseId } }: Props) => {
+  const { data: sessionData, status } = useSession();
   const router = useRouter();
   const toast = useToast();
+  let decoded = "";
+  if (sessionData) decoded = jwtDecode(sessionData?.idToken || "");
+  console.log(decoded, "decodce");
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const {
-    isOpen: isDeleteModalOpen,
-    onOpen: onDeleteModalOpen,
-    onClose: onDeleteModalClose,
-  } = useDisclosure();
 
   const [newPost, setNewPost] = useState({
     post_title: "",
     post_content: "",
   });
+  const bg = useColorModeValue("neutral.500", "neutral.50._dark");
 
   const [postToEdit, setPostToEdit] = useState<Post | null>(null);
   // const [postToVote, setPostToVote] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<number | null>(null);
   const [postData, setPostData] = useState<Post[] | null>(null);
-
+  const {
+    isOpen: isDeleteModalOpen,
+    onOpen: onDeleteModalOpen,
+    onClose: onDeleteModalClose,
+  } = useDisclosure();
 
   const handleClick = (post_id: number) => {
     router.push(`/discussions/${courseId}/${post_id}`);
@@ -103,16 +105,18 @@ const Posts= ({ params: { courseId } }: Props) => {
     if (!postToDelete) return;
 
     try {
-      await axios.delete(`${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`, {
-        params: { post_id: postToDelete },
-        headers: {
-          Authorization: `Bearer ${sessionData?.idToken}`,
-        },
-      });
+      await axios.delete(
+        `${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`,
+        {
+          params: { post_id: postToDelete },
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`,
+          },
+        }
+      );
       setPostData(
-          (prevData) =>
-              prevData?.filter((post) => post.post_id !== postToDelete) ||
-              []
+        (prevData) =>
+          prevData?.filter((post) => post.post_id !== postToDelete) || []
       );
       toast({
         title: "Post deleted.",
@@ -138,10 +142,7 @@ const Posts= ({ params: { courseId } }: Props) => {
   };
 
   const handleAddOrEditPost = async () => {
-    if (
-        !newPost.post_title ||
-        !newPost.post_content
-    ) {
+    if (!newPost.post_title || !newPost.post_content) {
       toast({
         title: "Invalid input.",
         description: "Please fill out all fields before submitting.",
@@ -161,18 +162,26 @@ const Posts= ({ params: { courseId } }: Props) => {
     try {
       desc = `Post has been updated successfully.`;
       if (postToEdit) {
-        await axios.put(`${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`, payload, {
-          params: { post_id: postToEdit.post_id },
-          headers: {
-            Authorization: `Bearer ${sessionData?.idToken}`,
-          },
-        });
+        await axios.put(
+          `${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`,
+          payload,
+          {
+            params: { post_id: postToEdit.post_id },
+            headers: {
+              Authorization: `Bearer ${sessionData?.idToken}`,
+            },
+          }
+        );
       } else {
-        await axios.post(`${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`, payload, {
-          headers: {
-            Authorization: `Bearer ${sessionData?.idToken}`,
-          },
-        });
+        await axios.post(
+          `${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`,
+          payload,
+          {
+            headers: {
+              Authorization: `Bearer ${sessionData?.idToken}`,
+            },
+          }
+        );
       }
 
       toast({
@@ -195,7 +204,7 @@ const Posts= ({ params: { courseId } }: Props) => {
       toast({
         title: `Error ${postToEdit ? "updating" : "adding"} post.`,
         description: `Failed to ${
-            postToEdit ? "update" : "add"
+          postToEdit ? "update" : "add"
         } the post. Please try again.`,
         status: "error",
         duration: 3000,
@@ -203,29 +212,27 @@ const Posts= ({ params: { courseId } }: Props) => {
         position: "top",
       });
       console.error(
-          `Failed to ${postToEdit ? "update" : "create"} post:`,
-          error
+        `Failed to ${postToEdit ? "update" : "create"} post:`,
+        error
       );
     }
   };
 
   useEffect(() => {
-    if (sessionData)
-      // console.log(sessionData.idToken?.split(".")[1])
+    if (sessionData) {
       getPosts();
+    }
   }, [sessionData]);
-
-  const bg = useColorModeValue("neutral.500", "neutral.50._dark");
 
   async function getPosts() {
     try {
       const response = await axios.get<PostResponse>(
-          `${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`,
-          {
-            headers: {
-              Authorization: `Bearer ${sessionData?.idToken}`,
-            },
-          }
+        `${API_DISCUSSION_BASE_URL}courses/${courseId}/discussions`,
+        {
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`,
+          },
+        }
       );
       setPostData(response?.data?.data as unknown as Post[]);
     } catch (error) {
@@ -233,74 +240,90 @@ const Posts= ({ params: { courseId } }: Props) => {
     }
   }
 
-  return (
-      <Box p={6} bg={bg}>
-        <>
-          <Button colorScheme="teal" onClick={onOpen} mb={6}>
-            Create New Post
-          </Button>
-          <Modal
-              isOpen={isOpen}
-              onClose={() => {
-                onClose();
-                setPostToEdit(null);
-              }}
-          >
-            <ModalOverlay />
-            <ModalContent>
-              <ModalHeader>
-                {postToEdit ? "Edit Post" : "Create New Post"}
-              </ModalHeader>
-              <ModalCloseButton />
-              <ModalBody>
-                <Input
-                    placeholder="Post Title"
-                    value={newPost.post_title}
-                    onChange={(e) =>
-                        setNewPost({ ...newPost, post_title: e.target.value })
-                    }
-                    mb={4}
-                />
-                <Textarea
-                    placeholder="Post Content"
-                    value={newPost.post_content}
-                    onChange={(e) =>
-                        setNewPost({
-                          ...newPost,
-                          post_content: e.target.value,
-                        })
-                    }
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button
-                    colorScheme="blue"
-                    onClick={handleAddOrEditPost}
-                    bg="primary.900"
-                >
-                  Save
-                </Button>
-              </ModalFooter>
-            </ModalContent>
-          </Modal>
-        </>
+  if (!courseId || status === "loading") return <div>Loading...</div>;
 
-        <Flex flexDirection="column" flexWrap="nowrap" justifyContent="start" gap={8}>
+  return (
+    <Box mx="auto" py={8} px={4}>
+      <Button
+        leftIcon={<ChevronLeftIcon />}
+        colorScheme="teal"
+        variant="link"
+        onClick={() => router.back()}
+        mb={2}
+      >
+        Back
+      </Button>
+      <Box p={6} bg={bg}>
+        <Button colorScheme="teal" onClick={onOpen} mb={6}>
+          Create New Post
+        </Button>
+        <Modal
+          isOpen={isOpen}
+          onClose={() => {
+            onClose();
+            setPostToEdit(null);
+          }}
+        >
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>
+              {postToEdit ? "Edit Post" : "Create New Post"}
+            </ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <Input
+                placeholder="Post Title"
+                value={newPost.post_title}
+                onChange={(e) =>
+                  setNewPost({ ...newPost, post_title: e.target.value })
+                }
+                mb={4}
+              />
+              <Textarea
+                placeholder="Post Content"
+                value={newPost.post_content}
+                onChange={(e) =>
+                  setNewPost({
+                    ...newPost,
+                    post_content: e.target.value,
+                  })
+                }
+              />
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                colorScheme="blue"
+                onClick={handleAddOrEditPost}
+                bg="primary.900"
+              >
+                Save
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        <Flex
+          flexDirection="column"
+          flexWrap="nowrap"
+          justifyContent="start"
+          gap={3}
+        >
           {postData?.map((post) => (
-              <Box key={post.post_id}>
-                <Post
-                    post_id={post.post_id}
-                    post_title={post.post_title}
-                    post_content={post.post_content}
-                    post_created_by={post.post_created_by}
-                    post_created_timestamp={post.post_created_timestamp}
-                    // vote_count={post.vote_count}
-                    onEdit={() => handleEdit(post)}
-                    // onVote={() => handleVote(post)}
-                    onDelete={() => handleDelete(post.post_id)}
-                    onClick={handleClick}
-                />
-              </Box>
+            <Box key={post.post_id}>
+              <Post
+                post_id={post.post_id}
+                post_title={post.post_title}
+                post_content={post.post_content}
+                post_created_by={post.post_created_by}
+                current_user={decoded?.sub.toString()}
+                post_created_timestamp={post.post_created_timestamp}
+                // vote_count={post.vote_count}
+                onEdit={() => handleEdit(post)}
+                // onVote={() => handleVote(post)}
+                onDelete={() => handleDelete(post.post_id)}
+                onClick={handleClick}
+              />
+            </Box>
           ))}
         </Flex>
 
@@ -323,9 +346,8 @@ const Posts= ({ params: { courseId } }: Props) => {
           </ModalContent>
         </Modal>
       </Box>
+    </Box>
   );
-
-  // return <DiscussionList courseId={courseId as string} />;
 };
 
 export default Posts;
