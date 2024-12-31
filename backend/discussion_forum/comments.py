@@ -89,13 +89,13 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             )
 
         result = db.query(forum_models.Comments).filter(forum_models.Comments.comment_in_post == post_id).all()
-        # if not result:
-        #     return JSONResponse(
-        #         status_code = 404,
-        #         content = error_response(
-        #             message = "No Comments Found for the Post"
-        #         )
-        #     )
+        if not result:
+            return JSONResponse(
+                status_code = 404,
+                content = error_response(
+                    message = "Post Not Found"
+                )
+            )
 
         return JSONResponse(
             status_code = 200,
@@ -174,8 +174,7 @@ async def create_comment(course_id: int, post_id: int, comm: CommentCreate, db: 
             reply_to = comm.reply_to,
             comment_in_post = post_id
         )
-        # data = db_comment.__dict__
-        # print(CommentCreate.model_validate(data).model_dump())
+        
         try:
             db.add(db_comment)
             db.commit()
@@ -274,48 +273,14 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
                     message = "Comment Not Found"
                 )
             )
-
-        if mode == "vote" and new_vote is not None:
-            vote_count = db_forum.vote_count
-
-            # Clicking upvote button will put new_vote as +1
-            if new_vote > 0:
-                if str(user_id) in db_comment.upvotes_by:
-                    db_comment = forum_models.Comments(
-                        vote_count = vote_count - 1,
-                        upvotes_by = db_comment.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                    )
-
-                elif str(user_id) in db_comment.downvotes_by:
-                    db_comment = forum_models.Comments(
-                        vote_count = vote_count + 2,
-                        downvotes_by = db_comment.downvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                        upvotes_by = db_comment.upvotes_by + ' ' + str(user_id)
-                    )
-
-            # Clicking downvote button will put new_vote as -1
-            elif new_vote < 0:
-                if str(user_id) in db_comment.upvotes_by:
-                    db_comment = forum_models.Comments(
-                        vote_count = vote_count - 2,
-                        upvotes_by = db_comment.upvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                        downvotes_by = db_comment.downvotes_by + ' ' + str(user_id)
-                    )
-
-                elif str(user_id) in db_comment.downvotes_by:
-                    db_comment = forum_models.Comments(
-                        vote_count = vote_count + 1,
-                        downvotes_by = db_comment.downvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                    )
-
-        # else:
-        #     if user_id != db_comment.comment_created_by:
-        #         return JSONResponse(
-        #             status_code = 401,
-        #             content = error_response(
-        #                 message = "User ID is not authorized to update the comment"
-        #             )
-        #         )
+        
+        if db_comment.comment_created_by != user_id:
+            return JSONResponse(
+                status_code = 404,
+                content = error_response(
+                    message = "You are not comment creator. You cannot edit the comment"
+                )
+            )
 
         update_data = comm.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -367,13 +332,33 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
 
 """DELETE API: to delete a comment in a post"""
 @router.delete("/courses/{course_id}/discussions/{post_id}")
-async def delete_comment(course_id: int, post_id: int, comment_id: int, db: db_dependency):
+async def delete_comment(course_id: int, post_id: int, comment_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
+        # Course validity checker gRPC
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
+                )
+            )
+        
+        # Authorization Error
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code = 401,
+                content = error_response(
+                    message = "Invalid Authorization Header Format"
+                )
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code = 401,
+                content = error_response(
+                    message = "User ID not found in Token"
                 )
             )
 
@@ -392,6 +377,14 @@ async def delete_comment(course_id: int, post_id: int, comment_id: int, db: db_d
                 status_code = 404,
                 content = error_response(
                     message = "Comment Not Found"
+                )
+            )
+        
+        if db_comment.comment_created_by != user_id:
+            return JSONResponse(
+                status_code = 404,
+                content = error_response(
+                    message = "You are not comment creator. You cannot delete the comment"
                 )
             )
 

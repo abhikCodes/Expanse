@@ -233,55 +233,14 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
                     message = "Post Not Found"
                 )
             )
-
-        if mode == "vote" and new_vote is not None:
-            vote_count = db_forum.vote_count
-
-            # Clicking upvote button will put new_vote as +1
-            if new_vote > 0:
-                print(db_forum.upvotes_by)
-                if db_forum.upvotes_by is None and db_forum.downvotes_by is None:
-                    db_forum = forum_models.Posts(
-                        vote_count = new_vote,
-                        upvotes_by = user_id,
-                        downvotes_by = user_id
-                    )
-
-                elif str(user_id) in db_forum.upvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count - 1,
-                        upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                    )
-
-                elif str(user_id) in db_forum.downvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count + 2,
-                        downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                        upvotes_by = db_forum.upvotes_by + ' ' + str(user_id)
-                    )
-
-            # Clicking downvote button will put new_vote as -1
-            elif new_vote < 0:
-                if str(user_id) in db_forum.upvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count - 2,
-                        upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                        downvotes_by = db_forum.downvotes_by + ' ' + str(user_id)
-                    )
-
-                elif str(user_id) in db_forum.downvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count + 1,
-                        downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                    )
-        # else:
-        #     if user_id != db_forum.post_created_by:
-        #         return JSONResponse(
-        #             status_code = 401,
-        #             content = error_response(
-        #                 message = "User ID is not authorized to update the post"
-        #             )
-        #         )
+        
+        if db_forum.post_created_by != user_id:
+            return JSONResponse(
+                status_code = 404,
+                content = error_response(
+                    message = "You are not post creator. You cannot edit the post"
+                )
+            )
 
         update_data = post.model_dump(exclude_unset=True)
         for key, value in update_data.items():
@@ -332,7 +291,7 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
 
 """DELETE API: to delete a post"""
 @router.delete("/courses/{course_id}/discussions")
-async def delete_post(course_id: int, post_id: int, db: db_dependency):
+async def delete_post(course_id: int, post_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
@@ -341,6 +300,21 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
                     message = "Course Not Found"
                 )
             )
+        
+        # User ID Auth
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
 
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
@@ -348,6 +322,14 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
                 status_code = 404,
                 content = error_response(
                     message = "Post Not Found"
+                )
+            )
+        
+        if db_forum.post_created_by != user_id:
+            return JSONResponse(
+                status_code = 404,
+                content = error_response(
+                    message = "You are not post creator. You cannot delete the post"
                 )
             )
 
