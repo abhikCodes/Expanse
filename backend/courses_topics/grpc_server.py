@@ -1,6 +1,6 @@
 import grpc
 from concurrent import futures
-from courses_topics.check_services_pb2 import EnrollmentResponse, ValidityResponse
+from courses_topics.check_services_pb2 import EnrollmentResponse, ValidityResponse, CourseNameResponse
 from courses_topics.check_services_pb2_grpc import CourseServiceServicer, add_CourseServiceServicer_to_server
 from courses_topics.database import SessionLocal
 import courses_topics.models as models
@@ -42,6 +42,18 @@ class CourseService(CourseServiceServicer):
             ).first() is not None
 
             return ValidityResponse(is_valid=is_valid)
+        finally:
+            db.close()
+
+    def CourseName(self, request, context):
+        """
+            Returns the course name based on course id.
+        """
+        course_id = request.course_id
+        db = SessionLocal()
+        try:
+            course_name = db.query(models.Courses.course_name).filter(models.Courses.course_id == course_id).scalar()
+            return CourseNameResponse(course_name=course_name)
         finally:
             db.close()
 

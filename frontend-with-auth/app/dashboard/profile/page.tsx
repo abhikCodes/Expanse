@@ -27,6 +27,7 @@ import { API_BASE_URL } from "@/app/constants"; // Assuming this is where your b
 import { DUMMY_QUIZZES } from "@/app/constants"; // Import dummy data for quizzes
 import BasicDetails from "./BasicDetails";
 import { useRouter } from "next/navigation";
+import { ChevronLeftIcon } from "@chakra-ui/icons";
 
 interface Course {
   course_id: number;
@@ -138,6 +139,15 @@ const ProfilePage = () => {
 
   return (
     <Box py={15}>
+      <Button
+        leftIcon={<ChevronLeftIcon />}
+        colorScheme="teal"
+        variant="link"
+        onClick={() => history.back()}
+        mb={2}
+      >
+        Back
+      </Button>
       <Flex
         gap={5}
         direction={{ base: "column", md: "row" }}

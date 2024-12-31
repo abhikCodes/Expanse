@@ -14,6 +14,7 @@ import {
   useColorMode,
   HStack,
   Divider,
+  Tooltip,
 } from "@chakra-ui/react";
 import Link from "next/link";
 import React from "react";
@@ -25,11 +26,16 @@ import {
 import ToggleThemeButton from "./components/useColorMode";
 import { useSession } from "next-auth/react";
 import { notifications } from "./constants";
+import { PiStudentFill } from "react-icons/pi";
+import { TbMinusVertical } from "react-icons/tb";
+import { useRouter } from "next/navigation";
 
 const NavBar = () => {
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
   const { status, data: sessionData } = useSession();
+  const role = sessionData?.user.role;
+  const router = useRouter();
 
   return (
     <Box
@@ -64,48 +70,74 @@ const NavBar = () => {
               </Text>
             </Flex>
           </Link>
-          <Flex align="center" gap="3">
+          <Flex align="center" gap="4">
             {/* Notifications Menu */}
-            <Menu placement={"bottom"}>
-              <MenuButton
-                as={IconButton}
-                aria-label="Notifications"
-                icon={<RiNotification3Line />}
-                variant="ghost"
-                size="lg"
-                color={isDarkMode ? "whiteAlpha.900" : "gray.600"}
-                _hover={{ bg: isDarkMode ? "gray.700" : "gray.200" }}
-              />
-              <MenuList maxH="300px" overflowY="auto" p={2}>
-                {notifications.map((notification) => (
-                  <Box width={"sm"} key={notification.id} mb={2}>
-                    <HStack justify="space-between" align="start">
-                      <Box>
-                        <Text fontWeight="bold" color="teal.900" fontSize="sm">
-                          {notification.title}
-                        </Text>
+            {status === "authenticated" && role === "student" && (
+              <Menu placement={"bottom"}>
+                <MenuButton
+                  as={IconButton}
+                  mr="-2"
+                  aria-label="Notifications"
+                  icon={<RiNotification3Line />}
+                  variant="ghost"
+                  size="lg"
+                  color={isDarkMode ? "whiteAlpha.900" : "gray.600"}
+                  _hover={{ bg: isDarkMode ? "gray.700" : "gray.200" }}
+                />
+                <MenuList maxH="300px" overflowY="auto" p={2}>
+                  {notifications.map((notification) => (
+                    <Box width={"sm"} key={notification.id} mb={2}>
+                      <HStack justify="space-between" align="start">
+                        <Box>
+                          <Text
+                            fontWeight="bold"
+                            color="teal.900"
+                            fontSize="sm"
+                          >
+                            {notification.title}
+                          </Text>
+                          <Text
+                            fontWeight="normal"
+                            color="teal.700"
+                            fontSize="sm"
+                          >
+                            {notification.description}
+                          </Text>
+                        </Box>
                         <Text
-                          fontWeight="normal"
-                          color="teal.700"
-                          fontSize="sm"
+                          fontSize="xs"
+                          color="gray.400"
+                          whiteSpace="nowrap"
                         >
-                          {notification.description}
+                          {notification.date}
                         </Text>
-                      </Box>
-                      <Text fontSize="xs" color="gray.400" whiteSpace="nowrap">
-                        {notification.date}
-                      </Text>
-                    </HStack>
-                    <Divider my={2} />
-                  </Box>
-                ))}
-                {notifications.length === 0 && (
-                  <Text textAlign="center" p={3} color="gray.500">
-                    No notifications
-                  </Text>
-                )}
-              </MenuList>
-            </Menu>
+                      </HStack>
+                      <Divider my={2} />
+                    </Box>
+                  ))}
+                  {notifications.length === 0 && (
+                    <Text textAlign="center" p={3} color="gray.500">
+                      No notifications
+                    </Text>
+                  )}
+                </MenuList>
+              </Menu>
+            )}
+            {status === "authenticated" && role === "teacher" && (
+              <Tooltip label="Enroll Students" placement="bottom" hasArrow>
+                <IconButton
+                  mr="-2"
+                  aria-label="Assign Courses"
+                  icon={<PiStudentFill />}
+                  variant="ghost"
+                  size="lg"
+                  color={isDarkMode ? "whiteAlpha.900" : "gray.600"}
+                  _hover={{ bg: isDarkMode ? "gray.700" : "gray.200" }}
+                  onClick={() => router.push("/enrollment")}
+                />
+              </Tooltip>
+            )}
+            {status === "authenticated" && <TbMinusVertical size="20px" />}
             <Menu>
               <Box fontWeight="semibold" justifySelf="center">
                 <Text>{sessionData?.["user"]?.["name"]}</Text>

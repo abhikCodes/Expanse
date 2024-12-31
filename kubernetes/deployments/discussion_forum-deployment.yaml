@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discussion-forum
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discussion-forum
+  template:
+    metadata:
+      labels:
+        app: discussion-forum
+    spec:
+      containers:
+      - name: discussion-forum
+        image: abshark/expanse-discussion  # Replace with your built Docker image
+        ports:
+        - containerPort: 8081
+        env:
+        - name: PYTHONPATH
+          value: "/app"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:password@host.docker.internal:5432/forumDB"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"

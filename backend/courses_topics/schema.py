@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 
 class CourseBase(BaseModel):
@@ -57,6 +57,7 @@ class ContentBase(BaseModel):
 
 class UserEnroll(BaseModel):
     course_id: Optional[int] = None
+    user_id: Optional[List[str]] = None
     class Config:
         from_attributes=True
 

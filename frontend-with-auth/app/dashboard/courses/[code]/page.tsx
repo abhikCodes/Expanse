@@ -32,6 +32,8 @@ import DiscussionNavigation from "./DiscussionNavigation";
 import CreateTopicModal from "./AddTopicsModal"; // Import the modal
 import { API_BASE_URL } from "@/app/constants";
 import PDFViewer from "@/app/components/PDFViewer";
+import { ChevronLeftIcon } from "@chakra-ui/icons";
+import { useRouter } from "next/navigation";
 
 interface Props {
   params: { code: string };
@@ -42,6 +44,7 @@ const CourseDetails = ({ params: { code } }: Props) => {
   const role = sessionData?.user.role;
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
+  const router = useRouter();
 
   const [courseDetails, setCourseDetails] = useState<{
     course_name: string;
@@ -88,6 +91,9 @@ const CourseDetails = ({ params: { code } }: Props) => {
       try {
         const response = await axios.get(API_BASE_URL + "course", {
           params: { course_id: code },
+          headers: {
+            Authorization: `Bearer ${sessionData?.idToken}`,
+          },
         });
         const data = response.data;
         if (data.status === "success" && data.data.length > 0) {
@@ -214,6 +220,15 @@ const CourseDetails = ({ params: { code } }: Props) => {
 
   return (
     <Box mx="auto" py={8} px={4}>
+      <Button
+        leftIcon={<ChevronLeftIcon />}
+        colorScheme="teal"
+        variant="link"
+        onClick={() => router.back()}
+        mb={2}
+      >
+        Back
+      </Button>
       {/* Course Header */}
       {loadingCourse ? (
         <Spinner />
