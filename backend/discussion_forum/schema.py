@@ -27,15 +27,12 @@ class PostResponse(PostBase):
 
 
 class CommentBase(BaseModel):
-    comment_id: Optional[int] = None
-    reply_to: Optional[str] = None
     comment_content: Optional[str] = None
-    # vote_count: Optional[int] = None
-    # upvotes_by: Optional[str] = None
-    # downvotes_by: Optional[str] = None
+    reply_to: Optional[str] = None
+    comment_in_post: Optional[int] = None
 
 class CommentCreate(CommentBase):
-    pass
+    comment_created_by: Optional[str] = None
 
 class CommentResponse(CommentBase):
     comment_created_by: Optional[int] = None

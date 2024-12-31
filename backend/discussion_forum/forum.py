@@ -86,7 +86,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
         return JSONResponse(
             status_code = 200,
             content = success_response(
-                data = jsonable_encoder([PostBase.model_validate(pos).model_dump() for pos in db_forum]),
+                data = jsonable_encoder(db_forum),
                 message = "All posts retrieved successfully"
             )
         )
@@ -113,6 +113,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
 @router.post("/courses/{course_id}/discussions")
 async def create_post(course_id: int, post: PostCreate, db: db_dependency, authorization: str = Header(...)):
     try:
+        # Course Validity gRPC call
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
@@ -121,6 +122,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
                 )
             )
 
+        # Auth User ID
         if not authorization.startswith("Bearer "):
             return JSONResponse(
                 status_code=401,
@@ -128,7 +130,6 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-
         user_id = decoded_payload.get("sub")
         if not user_id:
             return JSONResponse(
@@ -145,6 +146,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
                 )
             )
 
+        # API Logic
         db_forum = forum_models.Posts(
             post_title = post.post_title,
             post_content = post.post_content,
@@ -198,6 +200,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
 @router.put("/courses/{course_id}/discussions")
 async def update_post(course_id: int, post_id: int, post: PostBase, db: db_dependency, authorization: str = Header(...), mode: str = None, new_vote: int = None):
     try:
+        # Course Validity gRPC call
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
@@ -206,6 +209,22 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
                 )
             )
 
+        # User ID Auth
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
+        # API Logic
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(
@@ -215,27 +234,20 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
                 )
             )
 
-        if not authorization.startswith("Bearer "):
-            return JSONResponse(
-                status_code=401,
-                content=error_response(message="Invalid Authorization header format")
-            )
-        token = authorization.split(" ")[1]
-        decoded_payload = token_decoder(token)[1]
-
-        user_id = decoded_payload.get("sub")
-        if not user_id:
-            return JSONResponse(
-                status_code=401,
-                content=error_response(message="User ID not found in token")
-            )
-
         if mode == "vote" and new_vote is not None:
             vote_count = db_forum.vote_count
 
             # Clicking upvote button will put new_vote as +1
             if new_vote > 0:
-                if str(user_id) in db_forum.upvotes_by:
+                print(db_forum.upvotes_by)
+                if db_forum.upvotes_by is None and db_forum.downvotes_by is None:
+                    db_forum = forum_models.Posts(
+                        vote_count = new_vote,
+                        upvotes_by = user_id,
+                        downvotes_by = user_id
+                    )
+
+                elif str(user_id) in db_forum.upvotes_by:
                     db_forum = forum_models.Posts(
                         vote_count = vote_count - 1,
                         upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
@@ -275,6 +287,7 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
         for key, value in update_data.items():
             setattr(db_forum, key, value)
         db_forum.post_updated_timestamp = datetime.now()
+
         try:
             db.commit()
             db.refresh(db_forum)

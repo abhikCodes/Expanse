@@ -51,6 +51,7 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
                 )
             )
 
+        # user Id Auth
         if not authorization.startswith("Bearer "):
             return JSONResponse(
                 status_code = 401,
@@ -60,7 +61,6 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-
         user_id = decoded_payload.get("sub")
         if not user_id:
             return JSONResponse(
@@ -102,7 +102,7 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             content = success_response(
                 data = jsonable_encoder({
                     "PostData": [PostBase.model_validate(db_forum).model_dump()],
-                    "CommentData": [CommentBase.model_validate(com).model_dump() for com in result] if result else []
+                    "CommentData": result
                 }),
                 message = "Comments retrieved successfully" if result else "No Comments Found for the Post"
             )
@@ -128,8 +128,9 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
 
 """POST API: to create a new comment in a post"""
 @router.post("/courses/{course_id}/discussions/{post_id}")
-async def create_comment(course_id: int, post_id: int, reply_to: str, comm: CommentCreate, db: db_dependency, authorization: str = Header(...)):
+async def create_comment(course_id: int, post_id: int, comm: CommentCreate, db: db_dependency, authorization: str = Header(...)):
     try:
+        # validity checker for course id gRPC
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
@@ -138,6 +139,7 @@ async def create_comment(course_id: int, post_id: int, reply_to: str, comm: Comm
                 )
             )
 
+        # user id auth
         if not authorization.startswith("Bearer "):
             return JSONResponse(
                 status_code = 401,
@@ -147,7 +149,6 @@ async def create_comment(course_id: int, post_id: int, reply_to: str, comm: Comm
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-
         user_id = decoded_payload.get("sub")
         if not user_id:
             return JSONResponse(
@@ -157,24 +158,29 @@ async def create_comment(course_id: int, post_id: int, reply_to: str, comm: Comm
                 )
             )
 
+        # API Logic
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
-                    message = "Comment Not Found"
+                    message = "Post Not Found"
                 )
             )
 
         db_comment = forum_models.Comments(
             comment_content = comm.comment_content,
             comment_created_by = user_id,
-            reply_to = reply_to
+            reply_to = comm.reply_to,
+            comment_in_post = post_id
         )
+        # data = db_comment.__dict__
+        # print(CommentCreate.model_validate(data).model_dump())
         try:
             db.add(db_comment)
             db.commit()
             db.refresh(db_comment)
+
         except Exception as e:
             db.rollback()
             detail_dict = {
@@ -191,7 +197,12 @@ async def create_comment(course_id: int, post_id: int, reply_to: str, comm: Comm
         return JSONResponse(
             status_code = 201,
             content = success_response(
-                data = CommentBase.model_validate(db_comment).model_dump(),
+                data = jsonable_encoder({
+                    "course_id": course_id,
+                    "post_id": db_comment.comment_in_post,
+                    "comment_content": db_comment.comment_content,
+                    "reply_to": db_comment.reply_to
+                }),
                 message = "Comment created successfully"
             )
         )
@@ -218,11 +229,31 @@ async def create_comment(course_id: int, post_id: int, reply_to: str, comm: Comm
 @router.put("/courses/{course_id}/discussions/{post_id}")
 async def update_comment(course_id: int, post_id: int, comment_id: int, comm: CommentCreate, db: db_dependency, authorization: str = Header(...), mode: str = None, new_vote: int = None):
     try:
+        # Course Validity
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
                 content = error_response(
                     message = "Course Not Found"
+                )
+            )
+
+        # Authorization Error
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code = 401,
+                content = error_response(
+                    message = "Invalid Authorization Header Format"
+                )
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code = 401,
+                content = error_response(
+                    message = "User ID not found in Token"
                 )
             )
 
@@ -241,26 +272,6 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
                 status_code = 404,
                 content = error_response(
                     message = "Comment Not Found"
-                )
-            )
-
-        if not authorization.startswith("Bearer "):
-            return JSONResponse(
-                status_code = 401,
-                content = error_response(
-                    message = "Invalid Authorization Header Format"
-                )
-            )
-
-        token = authorization.split(" ")[1]
-        decoded_payload = token_decoder(token)[1]
-
-        user_id = decoded_payload.get("sub")
-        if not user_id:
-            return JSONResponse(
-                status_code = 401,
-                content = error_response(
-                    message = "User ID not found in Token"
                 )
             )
 
@@ -308,8 +319,10 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
 
         update_data = comm.model_dump(exclude_unset=True)
         for key, value in update_data.items():
-            setattr(db_forum, key, value)
+            setattr(db_comment, key, value)
+
         db_comment.comment_updated_timestamp = datetime.now()
+
         try:
             db.commit()
             db.refresh(db_comment)
@@ -329,7 +342,7 @@ async def update_comment(course_id: int, post_id: int, comment_id: int, comm: Co
         return JSONResponse(
             status_code = 200,
             content = success_response(
-                data = CommentBase.model_validate(db_comment).model_dump(),
+                data = jsonable_encoder(db_comment),
                 message = "Comment updated successfully"
             )
         )
