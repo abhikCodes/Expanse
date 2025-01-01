@@ -90,13 +90,6 @@ async def get_comments(course_id: int, post_id: int, db: db_dependency, authoriz
             )
 
         result = db.query(forum_models.Comments).filter(forum_models.Comments.comment_in_post == post_id).order_by(forum_models.Comments.comment_updated_timestamp).all()
-        if not result:
-            return JSONResponse(
-                status_code = 404,
-                content = error_response(
-                    message = "Comments Not Found"
-                )
-            )
 
         return JSONResponse(
             status_code = 200,
