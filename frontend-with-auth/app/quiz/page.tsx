@@ -46,7 +46,7 @@ interface Quiz {
 }
 
 const QuizHomePage = () => {
-  const { data: sessionData } = useSession();
+  const { data: sessionData, status } = useSession();
   const role = sessionData?.user.role;
   const [courseData, setCourseData] = useState<Course[] | null>(null);
   const [quizData, setQuizData] = useState<Record<number, Quiz[]>>({});
@@ -132,6 +132,8 @@ const QuizHomePage = () => {
       isClosable: true,
     });
   };
+
+  if (status === "loading") return <>Loading...</>;
 
   return (
     <Box p={10} bg={bg} color={cardTextColor} minH="100vh">

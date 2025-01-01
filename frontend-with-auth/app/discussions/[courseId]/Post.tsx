@@ -1,119 +1,129 @@
 "use client";
 import {
-    Box,
-    Text,
-    Stack,
-    Button,
-    Flex,
-    useColorModeValue,
+  Box,
+  Text,
+  Flex,
+  Avatar,
+  Button,
+  Badge,
+  useColorModeValue,
 } from "@chakra-ui/react";
 
 interface Props {
-    post_id: number;
-    post_title: string;
-    post_content: string;
-    // vote_count: number;
-    onEdit: (post_id: number) => void;
-    // onVote: (post_id: number) => void;
-    onDelete: (post_id: number) => void;
-    onClick: (post_id: number) => void;
+  post_id: number;
+  post_title: string;
+  post_content: string;
+  current_user: string;
+  post_updated_timestamp: string;
+  post_created_by: string;
+  onEdit: (post_id: number) => void;
+  onDelete: (post_id: number) => void;
+  onClick: (post_id: number) => void;
 }
 
 const Post = ({
-    post_id,
-    post_title,
-    post_content,
-    // vote_count,
-    onEdit,
-    // onVote,
-    onDelete,
-    onClick,
+  post_id,
+  post_title,
+  post_content,
+  post_updated_timestamp,
+  post_created_by,
+  current_user,
+  onEdit,
+  onDelete,
+  onClick,
 }: Props) => {
-    const bg = useColorModeValue("neutral.500", "primary.900");
-    const color = useColorModeValue("primary.900", "neutral.50");
+  // Define theme-based colors
+  const bg = useColorModeValue("neutral.50", "neutral._dark.50");
+  const hoverBg = useColorModeValue("neutral.300", "neutral._dark.900");
+  const subTextColor = useColorModeValue("teal.900", "white");
+  const borderColor = useColorModeValue("neutral.600", "neutral._dark.600");
+  const timestampColor = useColorModeValue("neutral.600", "neutral._dark.600");
 
-    return (
-        <Box
-            flexDirection="column"
-            borderWidth="1px"
-            borderRadius="lg"
-            overflow="hidden"
-            bg={bg}
-            color={color}
-            shadow="lg"
-            // width="300px"
-            mb={6}
-            p={4}
-            onClick={() => onClick(post_id)}
-            transition="transform 0.3s, box-shadow 0.3s"
-            _hover={{
-                transform: "scale(1.05)",
-                boxShadow: "0px 4px 15px rgba(0, 0, 0, 0.2)",
-            }}
-        >
-            <Stack spacing={3} mt={4}>
-                {/*<Text fontSize="lg" fontWeight="bold" color={color}>*/}
-                {/*    #{post_id}*/}
-                {/*</Text>*/}
-                {/*<Text fontSize="md" fontWeight="semibold" color={color}>*/}
-                {/*    {vote_count}*/}
-                {/*</Text>*/}
-                <Text fontSize="xl" fontWeight="semibold" color={color}>
-                    {post_title}
-                </Text>
-                <Box maxHeight="60px" overflowY="auto">
-                    <Text fontSize="sm" color={color}>
-                        {post_content}
-                    </Text>
-                </Box>
-                {/*<Flex mt={4} gap={4}>*/}
-                {/*    <Button*/}
-                {/*        colorScheme="teal"*/}
-                {/*        size="sm"*/}
-                {/*        onClick={(e) => {*/}
-                {/*            e.stopPropagation();*/}
-                {/*            onVote(post_id);*/}
-                {/*        }}*/}
-                {/*    >*/}
-                {/*        UP*/}
-                {/*    </Button>*/}
-                {/*    <Button*/}
-                {/*        colorScheme="teal"*/}
-                {/*        size="sm"*/}
-                {/*        onClick={(e) => {*/}
-                {/*            e.stopPropagation();*/}
-                {/*            onVote(post_id);*/}
-                {/*        }}*/}
-                {/*    >*/}
-                {/*        DOWN*/}
-                {/*    </Button>*/}
-                {/*</Flex>*/}
-                <Flex mt={4} gap={4}>
-                    <Button
-                        colorScheme="teal"
-                        size="sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(post_id);
-                        }}
-                    >
-                        Edit
-                    </Button>
-                    <Button
-                        textColor="white"
-                        bg="red.500"
-                        size="sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onDelete(post_id);
-                        }}
-                    >
-                        Delete
-                    </Button>
-                </Flex>
-            </Stack>
-        </Box>
-    );
+  return (
+    <Box
+      bg={bg}
+      border="1px solid"
+      borderColor={borderColor}
+      borderRadius="md"
+      p={4}
+      mb={6}
+      shadow="md"
+      _hover={{
+        transform: "translateY(-2px)",
+        boxShadow: "xl",
+        bg: hoverBg,
+      }}
+      transition="all 0.2s"
+      onClick={() => onClick(post_id)}
+      cursor="pointer"
+    >
+      {/* Header: Title and Action Menu */}
+      <Flex justify="space-between" align="center">
+        <Flex align="center" gap={3}>
+          <Avatar name={post_title} size="sm" bg="primary.500" />
+          <Box>
+            <Text
+              fontSize="lg"
+              fontWeight="bold"
+              color={subTextColor}
+              noOfLines={1}
+            >
+              {post_title}
+            </Text>
+          </Box>
+        </Flex>
+        <Text fontSize="xs" color={timestampColor}>
+          Last Updated At:{" "}
+          {new Date(post_updated_timestamp).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </Text>
+      </Flex>
+
+      {/* Content Section */}
+      <Box mt={4}>
+        <Text fontSize="sm" color={subTextColor} noOfLines={3}>
+          {post_content}
+        </Text>
+      </Box>
+
+      {/* Footer: Actions and Metadata */}
+      <Flex justify="space-between" align="center" mt={4}>
+        <Badge colorScheme="teal" fontSize="0.8em">
+          Post #{post_id}
+        </Badge>
+        {post_created_by === current_user && (
+          <Flex gap={2}>
+            <Button
+              aria-label="Edit Post"
+              size="sm"
+              colorScheme="teal"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(post_id);
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              aria-label="Delete Post"
+              size="sm"
+              colorScheme="red"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(post_id);
+              }}
+            >
+              Delete
+            </Button>
+          </Flex>
+        )}
+      </Flex>
+    </Box>
+  );
 };
 
 export default Post;
