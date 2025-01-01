@@ -40,7 +40,7 @@ interface Props {
 }
 
 const CourseDetails = ({ params: { code } }: Props) => {
-  const { data: sessionData } = useSession();
+  const { data: sessionData, status } = useSession();
   const role = sessionData?.user.role;
   const { colorMode } = useColorMode();
   const isDarkMode = colorMode === "dark";
@@ -217,6 +217,8 @@ const CourseDetails = ({ params: { code } }: Props) => {
   const handleTopicCreated = () => {
     fetchTopics();
   };
+
+  if (status === "loading") return <>Loading...</>;
 
   return (
     <Box mx="auto" py={8} px={4}>

@@ -14,7 +14,7 @@ interface Props {
   post_title: string;
   post_content: string;
   current_user: string;
-  post_created_timestamp: string;
+  post_updated_timestamp: string;
   post_created_by: string;
   onEdit: (post_id: number) => void;
   onDelete: (post_id: number) => void;
@@ -25,7 +25,7 @@ const Post = ({
   post_id,
   post_title,
   post_content,
-  post_created_timestamp,
+  post_updated_timestamp,
   post_created_by,
   current_user,
   onEdit,
@@ -73,8 +73,8 @@ const Post = ({
           </Box>
         </Flex>
         <Text fontSize="xs" color={timestampColor}>
-          Created At:{" "}
-          {new Date(post_created_timestamp).toLocaleDateString("en-US", {
+          Last Updated At:{" "}
+          {new Date(post_updated_timestamp).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
             year: "numeric",

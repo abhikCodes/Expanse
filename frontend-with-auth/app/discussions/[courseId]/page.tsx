@@ -36,7 +36,7 @@ interface Post {
   post_title: string;
   post_content: string;
   post_created_by: string;
-  post_created_timestamp: string;
+  post_updated_timestamp: string;
   // vote_count: number;
 }
 
@@ -316,7 +316,7 @@ const Posts = ({ params: { courseId } }: Props) => {
                 post_content={post.post_content}
                 post_created_by={post.post_created_by}
                 current_user={decoded?.sub.toString()}
-                post_created_timestamp={post.post_created_timestamp}
+                post_updated_timestamp={post.post_updated_timestamp}
                 // vote_count={post.vote_count}
                 onEdit={() => handleEdit(post)}
                 // onVote={() => handleVote(post)}

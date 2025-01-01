@@ -17,7 +17,7 @@ interface Props {
   post_id: number;
   post_title: string;
   post_content: string;
-  post_created_timestamp: string;
+  post_updated_timestamp: string;
   post_created_by: string;
   current_user: string;
 }
@@ -30,7 +30,7 @@ const Post = ({
   post_id,
   post_title,
   post_content,
-  post_created_timestamp,
+  post_updated_timestamp,
   post_created_by,
   current_user,
 }: Props) => {
@@ -123,7 +123,7 @@ const Post = ({
         <Flex alignItems="center" gap={2}>
           <Icon as={FiClock} boxSize={4} color={timestampColor} />
           <Text fontSize="sm" color={timestampColor}>
-            {new Date(post_created_timestamp).toLocaleString()}
+            {new Date(post_updated_timestamp).toLocaleString()}
           </Text>
         </Flex>
       </Flex>

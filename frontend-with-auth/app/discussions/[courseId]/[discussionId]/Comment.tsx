@@ -28,8 +28,8 @@ interface User {
 }
 
 const Comment = ({
-  comment_id,
-  reply_to,
+  // comment_id,
+  // reply_to,
   comment_content,
   comment_created_by,
   comment_created_timestamp,
@@ -56,7 +56,7 @@ const Comment = ({
     }
   }
 
-  if (!user) return <>Loading...</>;
+  if (!user) return <></>;
   return (
     <Box
       bg={bg}

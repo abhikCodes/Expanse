@@ -86,7 +86,7 @@ const DiscussionHomePage = () => {
               boxShadow="lg"
               transition="all 0.3s"
               _hover={{ transform: "scale(1.05)" }}
-              onClick={() => router.push(`/discussions/${course.course_code}`)}
+              onClick={() => router.push(`/discussions/${course.course_id}`)}
             >
               <Stack spacing={4}>
                 <Box display="flex" alignItems="center">
