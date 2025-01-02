@@ -48,12 +48,12 @@ Built with a **scalable microservices architecture**, Expanse ensures seamless i
    uvicorn main:app --reload
    ```
 
-### **Frontend (Next.js + TailwindCSS)**
-1. Navigate to the frontend directory:
+### **Frontend and Authentication Service (Next.js + TailwindCSS + GoogleAuth + NextAuth + Prisma ORM)**
+1. Navigate to the frontend and Authentication service directory:
    ```bash
-   cd frontend
+   cd frontend-with-auth
    ```
-2. Install frontend dependencies:
+2. Install frontend and authentication Service dependencies:
    ```bash
    npm install
    ```
