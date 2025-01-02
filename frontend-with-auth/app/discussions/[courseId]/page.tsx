@@ -18,6 +18,7 @@ import {
   useColorModeValue,
   Text,
   useToast,
+  Center,
 } from "@chakra-ui/react";
 import Post from "./Post";
 import { useRouter } from "next/navigation";
@@ -67,7 +68,7 @@ const Posts = ({ params: { courseId } }: Props) => {
   const [postToEdit, setPostToEdit] = useState<Post | null>(null);
   // const [postToVote, setPostToVote] = useState<Post | null>(null);
   const [postToDelete, setPostToDelete] = useState<number | null>(null);
-  const [postData, setPostData] = useState<Post[] | null>(null);
+  const [postData, setPostData] = useState<Post[]>([]);
   const {
     isOpen: isDeleteModalOpen,
     onOpen: onDeleteModalOpen,
@@ -308,23 +309,31 @@ const Posts = ({ params: { courseId } }: Props) => {
           justifyContent="start"
           gap={3}
         >
-          {postData?.map((post) => (
-            <Box key={post.post_id}>
-              <Post
-                post_id={post.post_id}
-                post_title={post.post_title}
-                post_content={post.post_content}
-                post_created_by={post.post_created_by}
-                current_user={decoded?.sub.toString()}
-                post_updated_timestamp={post.post_updated_timestamp}
-                // vote_count={post.vote_count}
-                onEdit={() => handleEdit(post)}
-                // onVote={() => handleVote(post)}
-                onDelete={() => handleDelete(post.post_id)}
-                onClick={handleClick}
-              />
-            </Box>
-          ))}
+          {postData?.length > 0 ? (
+            postData?.map((post) => (
+              <Box key={post.post_id}>
+                <Post
+                  post_id={post.post_id}
+                  post_title={post.post_title}
+                  post_content={post.post_content}
+                  post_created_by={post.post_created_by}
+                  current_user={decoded?.sub.toString()}
+                  post_updated_timestamp={post.post_updated_timestamp}
+                  // vote_count={post.vote_count}
+                  onEdit={() => handleEdit(post)}
+                  // onVote={() => handleVote(post)}
+                  onDelete={() => handleDelete(post.post_id)}
+                  onClick={handleClick}
+                />
+              </Box>
+            ))
+          ) : (
+            <Center mt={10}>
+              <Text fontSize="lg">
+                No Posts created yet. You can start with one!
+              </Text>
+            </Center>
+          )}
         </Flex>
 
         <Modal isOpen={isDeleteModalOpen} onClose={onDeleteModalClose}>
