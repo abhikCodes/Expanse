@@ -1,5 +1,3 @@
----
-
 # 📚 **Expanse - Distributed Online Learning Platform**
 
 ## 👥 **Team Name:**
@@ -94,18 +92,102 @@ Built with a **scalable microservices architecture**, Expanse ensures seamless i
    http://localhost:3000
    ```
 
+### **Kubernetes Deployment (Optional)**
+
+1. Navigate to the root directory:
+   ```bash
+   minikube start
+   ```
+
+2. Run the below command:
+   ```bash
+   kubectl apply -f kubernetes/config/ -f kubernetes/deployments/ -f kubernetes/hpa/ -f kubernetes/services/
+   ```
+
+3. Check the status of the pods:
+   ```bash
+   kubectl get pods -o wide
+   ```
+
+5. Once the pods are running, access the app via:
+   ```
+   http://localhost:3000
+   ```
+
+---
+
+### **Test Kubernetes HPA  (Optional)**
+
+1. Navigate to the root directory:
+   ```bash
+   minikube start
+   ```
+
+2. Run the below command:
+   ```bash
+   kubectl apply -f kubernetes/config/ -f kubernetes/deployments/ -f kubernetes/hpa/ -f kubernetes/services/
+   ```
+
+3. Check the status of the pods:
+   ```bash
+   kubectl get pods -o wide
+   ```
+
+4. Once the pods are running, port forward each service:
+   ```bash
+   kubectl port-forward service/courses-topics 8080:8080
+   kubectl port-forward service/discussion-forum 8081:8081
+   kubectl port-forward service/quiz-service 8082:8082
+   ```
+
+5. Install metrics-server
+   ```bash
+   kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+   ```
+
+6. Verify if metrics server is running
+   ```bash
+   kubectl get pods -n kube-system
+   ```
+
+7. Edit the metrics server deployment yaml
+   ```bash
+   kubectl get deployment metrics-server -n kube-system -o yaml > metrics-server.yaml
+   ```
+
+8. Open it up on VSCode
+   ```bash
+   code metrics-server.yaml
+   ```
+   
+9. Apply the new metrics server configurations
+   ```bash
+   kubectl apply -f metrics-server.yaml
+   ```
+
+10. Run the below command to check CPU utilization
+   ```bash
+   kubectl get hpa -w
+   ```
+
+11. Run the Apache Benchmark to simulate load
+   ```bash
+   ab -n 10000 -c 100 http://localhost:8082/get-score
+   ```
+
+
 ---
 
 ## 📑 **Project Report**
 
 The full project report is available in the root folder:  
-**[Project Report](./report.pdf)**
+**[Project Report](./survey_corps_expanse_online_learning_platform_report.pdf)**
 
 ---
 
 ## 🎥 **Project Demo Video**
 
 Watch the video showcasing the project here:  
-**[Project Demo Video](https://link-to-demo-video.com)**
+**[Project Demo Video](https://youtu.be/yLhtQ48VjLc)**
 
 ---
