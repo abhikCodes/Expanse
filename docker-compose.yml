@@ -61,7 +61,7 @@ services:
     container_name: discussion_forum
     restart: always
 
-  # Frontend and Authentication Service
+  # Frontend & Authentication Service
   frontend-with-auth:
     build:
       context: ./frontend-with-auth
