@@ -25,8 +25,8 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-MONGO_URI = "mongodb://host.docker.internal:27017"  
-MONGO_DB_NAME = "expanseDB"
+MONGO_URI = os.getenv('MONGO_URL')
+MONGO_DB_NAME = os.getenv('MONGO_DB_NAME')
 client = MongoClient(MONGO_URI)
 db_mongo = client[MONGO_DB_NAME]
 fs = GridFS(db_mongo)

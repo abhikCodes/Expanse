@@ -26,15 +26,16 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+GRPC_SERVER = os.getenv("GRPC_SERVER")
 # Checks enrollment of a student with a course
 def check_enrollment(user_id: str, course_id: int):
-    client = CourseClient(server_address="courses_topics:50051")
+    client = CourseClient(server_address=GRPC_SERVER)
     is_enrolled = client.check_enrollment(user_id, course_id)
     return is_enrolled
 
 # Checks if a course is present
 def check_course_validity(course_id: int):
-    client = CourseClient(server_address="courses_topics:50051")
+    client = CourseClient(server_address=GRPC_SERVER)
     is_valid = client.check_validity(course_id)
     return is_valid
 
