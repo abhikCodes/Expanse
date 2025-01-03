@@ -64,6 +64,7 @@ Built with a **scalable microservices architecture**, Expanse ensures seamless i
      ```
      Setup OAuth consent screen and Create OAuth client ID.
      Once done you will get Google Client ID and Secret.
+     <br>
 3. Install frontend and Authentication Service dependencies:
    ```bash
    npm install
