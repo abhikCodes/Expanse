@@ -49,5 +49,9 @@ export const DUMMY_QUIZZES = {
         { quiz_name: "Quiz 2", status: "pending" },
       ],
     },
+    {
+      course_code: "COMP40076",
+      quizzes: [{ quiz_name: "Quiz 1", status: "pending" }],
+    },
   ],
 };

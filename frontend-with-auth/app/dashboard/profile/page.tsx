@@ -176,6 +176,10 @@ const ProfilePage = () => {
       (q) => q.course_code === course.course_code
     )?.quizzes;
 
+    if (courseQuizzes?.length === 0 || courseQuizzes === undefined)
+      return <Text>No quiz is created for this course.</Text>;
+
+    console.log(courseQuizzes, "courquiz");
     return courseQuizzes?.map((quiz: Quiz, idx) => (
       <HStack
         py={3}
@@ -186,21 +190,6 @@ const ProfilePage = () => {
       >
         <Text>{quiz.quiz_name}</Text>
         <HStack spacing={2}>
-          {role === "student" && quiz.status === "completed" && (
-            <Tag colorScheme="green" variant="subtle">
-              <TagLabel>Completed - {quiz.score}/10</TagLabel>
-            </Tag>
-          )}
-          {role === "student" && quiz.status === "pending" && (
-            <Tag colorScheme="yellow" variant="subtle">
-              <TagLabel>Pending</TagLabel>
-            </Tag>
-          )}
-          {role === "student" && quiz.status === "expired" && (
-            <Tag colorScheme="red" variant="subtle">
-              <TagLabel>Expired</TagLabel>
-            </Tag>
-          )}
           {role === "teacher" && quiz.status === "pending" && (
             <Tag colorScheme="green" variant="subtle">
               <TagLabel>Quiz Open</TagLabel>
