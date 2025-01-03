@@ -16,15 +16,13 @@ spec:
       - name: courses-topics
         image: abshark/expanse-courses  # Replace with your built Docker image
         ports:
-        - containerPort: 8080  # REST API
-        - containerPort: 50051 # gRPC
-        env:
-        - name: PYTHONPATH
-          value: "/app"
-        - name: DATABASE_URL
-          value: "postgresql://postgres:password@host.docker.internal:5432/coursesDB"
-        - name: MONGO_URI
-          value: "mongodb://host.docker.internal:27017"
+          - containerPort: 8080  # REST API
+          - containerPort: 50051 # gRPC
+        envFrom:
+          - configMapRef:
+              name: backend-config
+          - configMapRef:
+              name: course-config
         resources:
           requests:
             cpu: "100m"

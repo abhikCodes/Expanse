@@ -11,6 +11,9 @@ services:
       - "50051:50051" # gRPC Server
     environment:
       - PYTHONPATH=/app
+      - POSTGRES_URL=postgresql://postgres:password@host.docker.internal:5432/courseDB
+      - MONGO_URL=mongodb://host.docker.internal:27017
+      - MONGO_DB_NAME=expanseDB
     volumes:
       - ./backend/common:/app/common
       - ./backend/protos:/app/protos
@@ -26,8 +29,11 @@ services:
     ports:
       - "8082:8082" # FastAPI Server
     environment:
-      - GRPC_SERVER_ADDRESS=courses_topics:50051
       - PYTHONPATH=/app
+      - POSTGRES_URL=postgresql://postgres:password@host.docker.internal:5432/quizDB
+      - MONGO_URL=mongodb://host.docker.internal:27017
+      - MONGO_DB_NAME=expanseDB
+      - GRPC_SERVER=courses_topics:50051
     volumes:
       - ./backend/common:/app/common
       - ./backend/protos:/app/protos
@@ -40,10 +46,14 @@ services:
     build:
       context: ./backend
       dockerfile: discussion_forum/Dockerfile
-    environment:
-      - PYTHONPATH=/app
     ports:
       - "8081:8081"
+    environment:
+      - PYTHONPATH=/app
+      - POSTGRES_URL=postgresql://postgres:password@host.docker.internal:5432/forumDB
+      - MONGO_URL=mongodb://host.docker.internal:27017
+      - MONGO_DB_NAME=expanseDB
+      - GRPC_SERVER=courses_topics:50051
     volumes:
       - ./backend/common:/app/common
       - ./backend/protos:/app/protos

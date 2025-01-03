@@ -16,12 +16,12 @@ spec:
       - name: discussion-forum
         image: abshark/expanse-discussion  # Replace with your built Docker image
         ports:
-        - containerPort: 8081
-        env:
-        - name: PYTHONPATH
-          value: "/app"
-        - name: DATABASE_URL
-          value: "postgresql://postgres:password@host.docker.internal:5432/forumDB"
+          - containerPort: 8081
+        envFrom:
+          - configMapRef:
+              name: backend-config
+          - configMapRef:
+              name: forum-config
         resources:
           requests:
             cpu: "100m"

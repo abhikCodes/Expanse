@@ -16,14 +16,12 @@ spec:
       - name: quiz-service
         image: abshark/expanse-quiz  # Replace with your built Docker image
         ports:
-        - containerPort: 8082
-        env:
-        - name: GRPC_SERVER_ADDRESS
-          value: "courses-topics:50051"
-        - name: PYTHONPATH
-          value: "/app"
-        - name: DATABASE_URL
-          value: "postgresql://postgres:password@host.docker.internal:5432/quizDB"
+          - containerPort: 8082
+        envFrom:
+          - configMapRef:
+              name: backend-config
+          - configMapRef:
+              name: quiz-config
         resources:
           requests:
             cpu: "100m"
