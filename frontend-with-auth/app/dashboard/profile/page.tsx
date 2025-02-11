@@ -19,12 +19,18 @@ import {
   SimpleGrid,
   TagLabel,
   Flex,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
 } from "@chakra-ui/react";
 import { useSession } from "next-auth/react";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { API_BASE_URL } from "@/app/constants"; // Assuming this is where your base API URL is defined
-import { DUMMY_QUIZZES } from "@/app/constants"; // Import dummy data for quizzes
+import { API_BASE_URL, API_QUIZ_BASE_URL } from "@/app/constants";
+import { DUMMY_QUIZZES } from "@/app/constants";
 import BasicDetails from "./BasicDetails";
 import { useRouter } from "next/navigation";
 import { ChevronLeftIcon } from "@chakra-ui/icons";
@@ -34,6 +40,15 @@ interface Course {
   course_name: string;
   course_description: string;
   course_code: string;
+  quiz_details: QuizDetails[];
+}
+
+interface QuizDetails {
+  quiz_id: number;
+  quiz_description: string;
+  score_obtained: number;
+  max_score: number;
+  date_attempted: string | number | Date;
 }
 
 interface Quiz {
@@ -48,12 +63,37 @@ const ProfilePage = () => {
   const isDarkMode = colorMode === "dark";
   const toast = useToast();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [quizData, setQuizData] = useState<Course[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
 
   const history = useRouter();
   const role = sessionData?.user?.role; // Role can be 'student' or 'teacher'
 
-  // Fetch courses for the user based on their role (student or teacher)
+  const fetchScores = async () => {
+    try {
+      const response = await axios.get(API_QUIZ_BASE_URL + "get-score", {
+        headers: {
+          Authorization: `Bearer ${sessionData?.idToken}`,
+        },
+      });
+      if (response.status === 200) {
+        setQuizData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching profile score:", error);
+      toast({
+        title: "Error fetching profile score",
+        description: "There was an issue fetching your scores.",
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+        position: "top",
+      });
+    } finally {
+      setLoadingCourses(false);
+    }
+  };
+
   const fetchCourses = async () => {
     setLoadingCourses(true);
     try {
@@ -63,7 +103,7 @@ const ProfilePage = () => {
         },
       });
       if (response.status === 200) {
-        setCourses(response.data.data); // Assuming the API returns courses for the student or teacher.
+        setCourses(response.data.data);
       }
     } catch (error) {
       console.error("Error fetching courses:", error);
@@ -82,21 +122,64 @@ const ProfilePage = () => {
 
   useEffect(() => {
     fetchCourses();
+    fetchScores();
   }, [sessionData?.idToken]);
 
   const handleClick = (course: Course) => {
     history.push(`courses/${course.course_id}`);
   };
+
+  const renderQuizAttempts = (courseId: number) => {
+    const courseQuizzes = quizData.find(
+      (q) => q.course_id === courseId
+    )?.quiz_details;
+
+    if (!courseQuizzes || courseQuizzes.length === 0) {
+      return <Text>No quiz attempts available for this course.</Text>;
+    }
+
+    return (
+      <Table variant="striped" size="sm" mt={4}>
+        <Thead>
+          <Tr>
+            <Th>Quiz Description</Th>
+            <Th>Score Obtained</Th>
+            <Th>Max Score</Th>
+            <Th>Date Attempted</Th>
+          </Tr>
+        </Thead>
+        <Tbody>
+          {courseQuizzes.map((quiz, idx) => (
+            <Tr key={idx}>
+              <Td>{quiz.quiz_description}</Td>
+              <Td>{quiz.score_obtained}</Td>
+              <Td>{quiz.max_score}</Td>
+              <Td>
+                {`${new Date(quiz.date_attempted).toLocaleDateString(
+                  "en-GB"
+                )} ${new Date(quiz.date_attempted).toLocaleTimeString("en-US", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`}
+              </Td>
+            </Tr>
+          ))}
+        </Tbody>
+      </Table>
+    );
+  };
+
   const displayQuizzes = (course: Course) => {
-    // Fetch quizzes from dummy data based on the user's role
-    const quizzes =
-      role === "student" ? DUMMY_QUIZZES.student : DUMMY_QUIZZES.teacher;
+    const quizzes = DUMMY_QUIZZES.teacher;
 
     const courseQuizzes = quizzes.find(
       (q) => q.course_code === course.course_code
     )?.quizzes;
-    console.log(courseQuizzes, "cs");
 
+    if (courseQuizzes?.length === 0 || courseQuizzes === undefined)
+      return <Text>No quiz is created for this course.</Text>;
+
+    console.log(courseQuizzes, "courquiz");
     return courseQuizzes?.map((quiz: Quiz, idx) => (
       <HStack
         py={3}
@@ -107,21 +190,6 @@ const ProfilePage = () => {
       >
         <Text>{quiz.quiz_name}</Text>
         <HStack spacing={2}>
-          {role === "student" && quiz.status === "completed" && (
-            <Tag colorScheme="green" variant="subtle">
-              <TagLabel>Completed - {quiz.score}/10</TagLabel>
-            </Tag>
-          )}
-          {role === "student" && quiz.status === "pending" && (
-            <Tag colorScheme="yellow" variant="subtle">
-              <TagLabel>Pending</TagLabel>
-            </Tag>
-          )}
-          {role === "student" && quiz.status === "expired" && (
-            <Tag colorScheme="red" variant="subtle">
-              <TagLabel>Expired</TagLabel>
-            </Tag>
-          )}
           {role === "teacher" && quiz.status === "pending" && (
             <Tag colorScheme="green" variant="subtle">
               <TagLabel>Quiz Open</TagLabel>
@@ -197,10 +265,12 @@ const ProfilePage = () => {
                       as="h5"
                       size="sm"
                       color={isDarkMode ? "_dark.300" : "primary.900"}
+                      pb="5"
                     >
                       Quizzes
                     </Heading>
-                    {displayQuizzes(course)}
+                    {role === "teacher" && displayQuizzes(course)}
+                    {role === "student" && renderQuizAttempts(course.course_id)}
                   </CardBody>
                   {role === "teacher" && (
                     <CardFooter>

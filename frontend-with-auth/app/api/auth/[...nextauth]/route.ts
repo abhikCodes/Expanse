@@ -65,6 +65,10 @@ const handler = NextAuth({
       }
       return token; // Return the JWT token with the added data
     },
+    async redirect({ url, baseUrl }) {
+      // Redirect users to /dashboard after successful login
+      return url.startsWith(baseUrl) ? "/dashboard" : baseUrl;
+    },
   },
 });
 

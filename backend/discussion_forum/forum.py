@@ -3,7 +3,9 @@ from datetime import datetime
 from typing import Annotated
 from fastapi import APIRouter, Depends, Header
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from discussion_forum.database import SessionLocal
 from discussion_forum.schema import PostBase, PostCreate
 import discussion_forum.models as forum_models
@@ -23,21 +25,22 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
+GRPC_SERVER = os.getenv("GRPC_SERVER")
 # Checks enrollment of a student with a course
 def check_enrollment(user_id: str, course_id: int):
-    client = CourseClient(server_address="courses_topics:50051")
+    client = CourseClient(server_address=GRPC_SERVER)
     is_enrolled = client.check_enrollment(user_id, course_id)
     return is_enrolled
 
 # Checks if a course is present
 def check_course_validity(course_id: int):
-    client = CourseClient(server_address="courses_topics:50051")
+    client = CourseClient(server_address=GRPC_SERVER)
     is_valid = client.check_validity(course_id)
     return is_valid
 
 
 """GET API: to get all the posts in the course forum"""
-@router.get("/course/{course_id}/forum")
+@router.get("/courses/{course_id}/discussions")
 async def get_posts(course_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
         # gRPC validity checker
@@ -73,7 +76,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
                 )
             )
 
-        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).all()
+        db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).order_by(forum_models.Posts.post_updated_timestamp).all()
         if not db_forum:
             return JSONResponse(
                 status_code = 404,
@@ -85,7 +88,7 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
         return JSONResponse(
             status_code = 200,
             content = success_response(
-                data = dict(PostBase.model_validate(pos).model_dump() for pos in db_forum),
+                data = jsonable_encoder(db_forum),
                 message = "All posts retrieved successfully"
             )
         )
@@ -109,9 +112,10 @@ async def get_posts(course_id: int, db: db_dependency, authorization: str = Head
 
 
 """POST API: to create a new post in a course forum"""
-@router.post("/course/{course_id}/forum")
+@router.post("/courses/{course_id}/discussions")
 async def create_post(course_id: int, post: PostCreate, db: db_dependency, authorization: str = Header(...)):
     try:
+        # Course Validity gRPC call
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
@@ -120,6 +124,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
                 )
             )
 
+        # Auth User ID
         if not authorization.startswith("Bearer "):
             return JSONResponse(
                 status_code=401,
@@ -127,7 +132,6 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
             )
         token = authorization.split(" ")[1]
         decoded_payload = token_decoder(token)[1]
-
         user_id = decoded_payload.get("sub")
         if not user_id:
             return JSONResponse(
@@ -144,6 +148,7 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
                 )
             )
 
+        # API Logic
         db_forum = forum_models.Posts(
             post_title = post.post_title,
             post_content = post.post_content,
@@ -194,9 +199,10 @@ async def create_post(course_id: int, post: PostCreate, db: db_dependency, autho
 
 
 """PUT API: to update OR vote a post"""
-@router.put("/course/{course_id}/forum")
+@router.put("/courses/{course_id}/discussions")
 async def update_post(course_id: int, post_id: int, post: PostBase, db: db_dependency, authorization: str = Header(...), mode: str = None, new_vote: int = None):
     try:
+        # Course Validity gRPC call
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
                 status_code = 404,
@@ -205,6 +211,22 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
                 )
             )
 
+        # User ID Auth
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
+        
+        # API Logic
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
             return JSONResponse(
@@ -213,67 +235,20 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
                     message = "Post Not Found"
                 )
             )
-
-        if not authorization.startswith("Bearer "):
+        
+        if db_forum.post_created_by != user_id:
             return JSONResponse(
-                status_code=401,
-                content=error_response(message="Invalid Authorization header format")
+                status_code = 404,
+                content = error_response(
+                    message = "You are not post creator. You cannot edit the post"
+                )
             )
-        token = authorization.split(" ")[1]
-        decoded_payload = token_decoder(token)[1]
-
-        user_id = decoded_payload.get("sub")
-        if not user_id:
-            return JSONResponse(
-                status_code=401,
-                content=error_response(message="User ID not found in token")
-            )
-
-        if mode == "vote" and new_vote is not None:
-            vote_count = db_forum.vote_count
-
-            # Clicking upvote button will put new_vote as +1
-            if new_vote > 0:
-                if str(user_id) in db_forum.upvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count - 1,
-                        upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                    )
-
-                elif str(user_id) in db_forum.downvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count + 2,
-                        downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                        upvotes_by = db_forum.upvotes_by + ' ' + str(user_id)
-                    )
-
-            # Clicking downvote button will put new_vote as -1
-            elif new_vote < 0:
-                if str(user_id) in db_forum.upvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count - 2,
-                        upvotes_by = db_forum.upvotes_by.replace(' ' + str(user_id) + ' ', ' '),
-                        downvotes_by = db_forum.downvotes_by + ' ' + str(user_id)
-                    )
-
-                elif str(user_id) in db_forum.downvotes_by:
-                    db_forum = forum_models.Posts(
-                        vote_count = vote_count + 1,
-                        downvotes_by = db_forum.downvotes_by.replace(' ' + str(user_id) + ' ', ' ')
-                    )
-        # else:
-        #     if user_id != db_forum.post_created_by:
-        #         return JSONResponse(
-        #             status_code = 401,
-        #             content = error_response(
-        #                 message = "User ID is not authorized to update the post"
-        #             )
-        #         )
 
         update_data = post.model_dump(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_forum, key, value)
         db_forum.post_updated_timestamp = datetime.now()
+
         try:
             db.commit()
             db.refresh(db_forum)
@@ -317,8 +292,8 @@ async def update_post(course_id: int, post_id: int, post: PostBase, db: db_depen
 
 
 """DELETE API: to delete a post"""
-@router.delete("/course/{course_id}/forum")
-async def delete_post(course_id: int, post_id: int, db: db_dependency):
+@router.delete("/courses/{course_id}/discussions")
+async def delete_post(course_id: int, post_id: int, db: db_dependency, authorization: str = Header(...)):
     try:
         if not check_course_validity(course_id=course_id):
             return JSONResponse(
@@ -327,6 +302,21 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
                     message = "Course Not Found"
                 )
             )
+        
+        # User ID Auth
+        if not authorization.startswith("Bearer "):
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="Invalid Authorization header format")
+            )
+        token = authorization.split(" ")[1]
+        decoded_payload = token_decoder(token)[1]
+        user_id = decoded_payload.get("sub")
+        if not user_id:
+            return JSONResponse(
+                status_code=401,
+                content=error_response(message="User ID not found in token")
+            )
 
         db_forum = db.query(forum_models.Posts).filter(forum_models.Posts.course_id == course_id).filter(forum_models.Posts.post_id == post_id).first()
         if not db_forum:
@@ -334,6 +324,14 @@ async def delete_post(course_id: int, post_id: int, db: db_dependency):
                 status_code = 404,
                 content = error_response(
                     message = "Post Not Found"
+                )
+            )
+        
+        if db_forum.post_created_by != user_id:
+            return JSONResponse(
+                status_code = 404,
+                content = error_response(
+                    message = "You are not post creator. You cannot delete the post"
                 )
             )
 

@@ -58,7 +58,7 @@ const Courses = ({ role }: props) => {
     onClose: onDeleteModalClose,
   } = useDisclosure();
 
-  const { data: sessionData } = useSession();
+  const { data: sessionData, status } = useSession();
 
   const [newCourse, setNewCourse] = useState({
     course_code: "",
@@ -224,6 +224,8 @@ const Courses = ({ role }: props) => {
       console.error(error);
     }
   }
+
+  if (status === "loading") return <>Loading...</>;
 
   return (
     <Box p={6} bg={bg}>

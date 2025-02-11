@@ -62,7 +62,7 @@ interface Props {
 }
 
 const QuizPage = ({ params: { id } }: Props) => {
-  const { data: sessionData } = useSession();
+  const { data: sessionData, status } = useSession();
   const router = useRouter();
   const toast = useToast();
   const userRole = sessionData?.user?.role; // Extract role from session data
@@ -182,6 +182,8 @@ const QuizPage = ({ params: { id } }: Props) => {
       setIsSubmitting(false);
     }
   };
+
+  if (status === "loading") return <>Loading...</>;
 
   if (loading) {
     return (

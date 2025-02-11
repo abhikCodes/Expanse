@@ -26,7 +26,7 @@ import { useSession } from "next-auth/react";
 
 const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
   const [quizDescription, setQuizDescription] = useState<string>("");
-  const { data: sessionData } = useSession();
+  const { data: sessionData, status } = useSession();
   const maxScore = 100;
   const [questions, setQuestions] = useState([
     { question: "", options: { A: "", B: "", C: "" }, answer: "" },
@@ -105,6 +105,8 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
       console.error(error);
     }
   };
+
+  if (status === "loading") return <>Loading...</>;
 
   return (
     <Box p={6}>
