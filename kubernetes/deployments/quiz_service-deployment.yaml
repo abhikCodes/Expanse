@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quiz-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: quiz-service
+  template:
+    metadata:
+      labels:
+        app: quiz-service
+    spec:
+      containers:
+      - name: quiz-service
+        image: abshark/expanse-quiz  # Replace with your built Docker image
+        ports:
+        - containerPort: 8082
+        env:
+        - name: GRPC_SERVER_ADDRESS
+          value: "courses-topics:50051"
+        - name: PYTHONPATH
+          value: "/app"
+        - name: DATABASE_URL
+          value: "postgresql://postgres:password@host.docker.internal:5432/quizDB"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "128Mi"

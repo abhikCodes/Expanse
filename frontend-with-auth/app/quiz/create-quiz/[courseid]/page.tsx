@@ -22,15 +22,16 @@ import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { API_QUIZ_BASE_URL } from "../../../constants";
+import { useSession } from "next-auth/react";
 
 const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
   const [quizDescription, setQuizDescription] = useState<string>("");
-  const [maxScore, setMaxScore] = useState<number>(50);
+  const { data: sessionData } = useSession();
+  const maxScore = 100;
   const [questions, setQuestions] = useState([
     { question: "", options: { A: "", B: "", C: "" }, answer: "" },
   ]);
   const bg = useColorModeValue("neutral.50", "neutral.50._dark");
-
   const toast = useToast();
   const router = useRouter();
   const courseId = params.courseid;
@@ -77,7 +78,10 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
       };
 
       await axios.post(`${API_QUIZ_BASE_URL}create-quiz`, payload, {
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${sessionData?.idToken}`,
+        },
       });
 
       toast({
@@ -116,7 +120,7 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
             placeholder="Enter a description for the quiz"
           />
         </FormControl>
-
+        {/* 
         <FormControl isRequired>
           <FormLabel>Maximum Score</FormLabel>
           <Input
@@ -126,7 +130,7 @@ const CreateQuizPage = ({ params }: { params: { courseid: string } }) => {
             min={1}
             placeholder="Enter maximum score"
           />
-        </FormControl>
+        </FormControl> */}
 
         <VStack align="start" spacing={8} w="100%">
           {questions.map((question, index) => (

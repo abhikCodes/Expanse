@@ -169,14 +169,14 @@ const LandingPage = () => {
             image="/abhik.jpeg"
           />
           <TestimonialCard
-            name="Samundar Paji"
+            name="Samudra Borkakoti"
             title="ML Engineer"
             quote="Samundar builds powerful machine learning models that enhance user experience and automation."
             image=""
           />
           <TestimonialCard
             name="Pratham Sharma"
-            title="Giga Chad Kid"
+            title="Dev Ops Engineer"
             quote="Pratham is the driving force behind our more 'creative' missteps and bringing his own brand of organized chaos to the team"
             image=""
           />
